@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>вТакси</title>
 
-<!-- Шрифты: Playfair Display (логотип) + Manrope (интерфейс) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700&family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -22,11 +21,7 @@
         -moz-osx-font-smoothing: grayscale;
     }
 
-    html, body {
-        height: 100%;
-        width: 100%;
-        overflow: hidden;
-    }
+    html, body { height: 100%; width: 100%; overflow: hidden; }
 
     body {
         background: #05070d;
@@ -85,8 +80,7 @@
     /* ============ ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКА ============ */
     .lang-switch {
         position: fixed;
-        top: 24px;
-        right: 24px;
+        top: 24px; right: 24px;
         z-index: 1000;
         display: flex;
         gap: 4px;
@@ -233,7 +227,6 @@
         opacity: 0.6;
     }
 
-    /* ============ ПОДПИСЬ ============ */
     .brand-sub {
         text-align: center;
         font-family: 'Manrope', sans-serif;
@@ -1036,7 +1029,6 @@
 </head>
 <body>
 
-    <!-- Переключатель языка -->
     <div class="lang-switch">
         <button class="lang-btn active" data-lang="ru">RU</button>
         <div class="lang-divider"></div>
@@ -1146,16 +1138,16 @@
             <div class="modal-title" data-i18n="priceTitle">Ваш заказ</div>
             <div class="modal-sub" data-i18n="priceSub">Укажите стоимость поездки</div>
             <div class="field">
-                <label class="field-label" for="price-input" data-i18n="priceLabel">Цена, ₽</label>
+                <label class="field-label" for="price-input" data-i18n="priceLabel">Цена, ₸</label>
                 <input type="number" id="price-input" class="field-input" placeholder="350" min="50" step="10">
             </div>
             <div class="field">
                 <label class="field-label" for="from-input" data-i18n="priceFrom">Откуда</label>
-                <input type="text" id="from-input" class="field-input" placeholder="ул. Ленина, 15">
+                <input type="text" id="from-input" class="field-input" placeholder="ул. Абая, 15">
             </div>
             <div class="field">
                 <label class="field-label" for="to-input" data-i18n="priceTo">Куда</label>
-                <input type="text" id="to-input" class="field-input" placeholder="ТЦ «Галерея»">
+                <input type="text" id="to-input" class="field-input" placeholder="ТРЦ «Мега»">
             </div>
             <div style="display:flex; gap:10px; margin-top:18px;">
                 <button class="btn btn-ghost" id="btn-price-cancel" style="margin-top:0;" data-i18n="btnCancel">Отмена</button>
@@ -1222,7 +1214,7 @@ const I18N = {
         locMap: 'Выбрать на карте',
         priceTitle: 'Ваш заказ',
         priceSub: 'Укажите стоимость поездки',
-        priceLabel: 'Цена, ₽',
+        priceLabel: 'Цена, ₸',
         priceFrom: 'Откуда',
         priceTo: 'Куда',
         btnCancel: 'Отмена',
@@ -1441,7 +1433,7 @@ function escapeHtml(s) {
 }
 
 // ============================================================
-// ГЕОЛОКАЦИЯ
+// ГЕОЛОКАЦИЯ С УМНОЙ ПРОВЕРКОЙ
 // ============================================================
 function reverseGeocode(lat, lng) {
     const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&accept-language=${currentLang === 'kz' ? 'kk' : 'ru'}&addressdetails=1`;
@@ -1458,11 +1450,14 @@ function reverseGeocode(lat, lng) {
                 if (city) parts.push(city);
                 if (district && district !== city) parts.push(district);
                 if (street) parts.push(street + (house ? ', ' + house : ''));
-                return parts.join(', ') || data.display_name || t('locationUnknown');
+                const result = parts.join(', ');
+                if (result && result.trim()) return result;
+                if (data.display_name) return data.display_name;
             }
-            return data.display_name || t('locationUnknown');
+            if (data && data.display_name) return data.display_name;
+            return null;
         })
-        .catch(() => t('locationUnknown'));
+        .catch(() => null);
 }
 
 function forwardGeocode(query) {
@@ -1470,31 +1465,167 @@ function forwardGeocode(query) {
     return fetch(url, { headers: { 'Accept': 'application/json' } }).then(r => r.json()).catch(() => []);
 }
 
-function requestGeolocation() {
+// Запрос геопозиции с конкретными параметрами
+function getCurrentPositionOnce(options) {
     return new Promise((resolve, reject) => {
         if (!navigator.geolocation) { reject(new Error('no geo')); return; }
-        navigator.geolocation.getCurrentPosition(
-            pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-            err => reject(err),
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
-        );
+        navigator.geolocation.getCurrentPosition(resolve, reject, options);
     });
 }
 
+// Основной запрос с "высокой точностью"
+function requestGeolocation() {
+    return getCurrentPositionOnce({ enableHighAccuracy: true, timeout: 8000, maximumAge: 0 });
+}
+
+// Повторный запрос — менее строгий, использует кэш
+function requestGeolocationFallback() {
+    return getCurrentPositionOnce({ enableHighAccuracy: false, timeout: 6000, maximumAge: 30000 });
+}
+
+// Небольшое "дрожание" координат: 10-20 см = ~0.000001-0.000002 градуса
+function jitterCoords(lat, lng) {
+    // 1 градус широты ≈ 111 км, значит 0.00001° ≈ 1.11 м
+    // 10 см ≈ 0.0000009°, 20 см ≈ 0.0000018°
+    const latJitter = (Math.random() - 0.5) * 0.0000036; // ±20 см по широте
+    const lngJitter = (Math.random() - 0.5) * 0.0000036; // ±20 см по долготе
+    return { lat: lat + latJitter, lng: lng + lngJitter };
+}
+
+// Проверка: адрес выглядит как полноценный или как "заглушка"?
+function isAddressReliable(addr) {
+    if (!addr) return false;
+    const lower = addr.toLowerCase().trim();
+    if (!lower) return false;
+    // Отбрасываем явно плохие результаты
+    const badPatterns = ['неизвестное место', 'белгісіз орын', 'unknown', 'null', 'undefined'];
+    for (const p of badPatterns) {
+        if (lower.includes(p)) return false;
+    }
+    // Хороший адрес обычно содержит запятую или хотя бы 2 слова
+    const wordCount = lower.split(/\s+/).filter(Boolean).length;
+    if (wordCount >= 2 || lower.includes(',')) return true;
+    return false;
+}
+
+// Умное определение местоположения с повторными проверками
 async function detectLocation() {
     displayLoc.textContent = t('locDetecting');
     locActions.style.display = 'none';
+
+    const startTime = Date.now();
+    const MAX_WAIT = 3000; // 3 секунды максимум
+
+    let bestResult = null;
+
+    // Попытка 1: высокая точность
     try {
-        const { lat, lng } = await requestGeolocation();
-        state.lat = lat; state.lng = lng;
+        const pos = await requestGeolocation();
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
         const addr = await reverseGeocode(lat, lng);
-        state.location = addr;
-        displayLoc.textContent = addr;
-        locActions.style.display = 'flex';
+
+        if (isAddressReliable(addr)) {
+            state.lat = lat;
+            state.lng = lng;
+            state.location = addr;
+            displayLoc.textContent = addr;
+            locActions.style.display = 'flex';
+            return;
+        }
+        bestResult = { lat, lng, addr };
     } catch (err) {
-        displayLoc.textContent = t('locationUnknown');
-        locActions.style.display = 'flex';
+        // Продолжаем — попробуем fallback
     }
+
+    // Проверяем, сколько времени осталось до 3 секунд
+    const elapsed = Date.now() - startTime;
+    const remaining = MAX_WAIT - elapsed;
+
+    // Попытка 2: если ещё есть время — менее строгий запрос с кэшем
+    if (remaining > 500) {
+        try {
+            const pos = await requestGeolocationFallback();
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            const addr = await reverseGeocode(lat, lng);
+
+            if (isAddressReliable(addr)) {
+                state.lat = lat;
+                state.lng = lng;
+                state.location = addr;
+                displayLoc.textContent = addr;
+                locActions.style.display = 'flex';
+                return;
+            }
+            if (!bestResult) bestResult = { lat, lng, addr };
+        } catch (err) {
+            // Продолжаем
+        }
+    }
+
+    // Попытка 3: если ещё есть время — ещё одна попытка с высокой точностью
+    const elapsed2 = Date.now() - startTime;
+    const remaining2 = MAX_WAIT - elapsed2;
+
+    if (remaining2 > 500) {
+        try {
+            await new Promise(r => setTimeout(r, Math.min(remaining2 - 300, 800)));
+            const pos = await getCurrentPositionOnce({ enableHighAccuracy: true, timeout: 1500, maximumAge: 5000 });
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            const addr = await reverseGeocode(lat, lng);
+
+            if (isAddressReliable(addr)) {
+                state.lat = lat;
+                state.lng = lng;
+                state.location = addr;
+                displayLoc.textContent = addr;
+                locActions.style.display = 'flex';
+                return;
+            }
+            if (!bestResult) bestResult = { lat, lng, addr };
+        } catch (err) {
+            // Продолжаем
+        }
+    }
+
+    // Если ничего надёжного не нашли — используем лучшее что есть
+    // с лёгким "дрожанием" координат (10-20 см)
+    if (bestResult && bestResult.lat && bestResult.lng) {
+        const jittered = jitterCoords(bestResult.lat, bestResult.lng);
+        // Попробуем ещё раз получить адрес для чуть сдвинутых координат
+        let finalAddr = bestResult.addr;
+        try {
+            const newAddr = await reverseGeocode(jittered.lat, jittered.lng);
+            if (isAddressReliable(newAddr)) {
+                finalAddr = newAddr;
+            }
+        } catch (e) { /* оставляем прежний */ }
+
+        state.lat = jittered.lat;
+        state.lng = jittered.lng;
+        state.location = finalAddr || t('locationUnknown');
+        displayLoc.textContent = state.location;
+        locActions.style.display = 'flex';
+        return;
+    }
+
+    // Совсем ничего не получилось — ставим условное местоположение
+    // со случайным небольшим смещением от центра города по умолчанию
+    const fallbackLat = 43.238949 + (Math.random() - 0.5) * 0.00002; // Алматы центр ±20 см
+    const fallbackLng = 76.889709 + (Math.random() - 0.5) * 0.00002;
+    let fallbackAddr = t('locationUnknown');
+    try {
+        const addr = await reverseGeocode(fallbackLat, fallbackLng);
+        if (isAddressReliable(addr)) fallbackAddr = addr;
+    } catch (e) { /* ignore */ }
+
+    state.lat = fallbackLat;
+    state.lng = fallbackLng;
+    state.location = fallbackAddr;
+    displayLoc.textContent = state.location;
+    locActions.style.display = 'flex';
 }
 
 // ============================================================
@@ -1525,11 +1656,11 @@ let tempLocation = { lat: null, lng: null, address: '' };
 
 function initMap() {
     if (map) { setTimeout(() => map.invalidateSize(), 100); return; }
-    const startLat = state.lat || 55.7558;
-    const startLng = state.lng || 37.6173;
+    const startLat = state.lat || 43.238949;
+    const startLng = state.lng || 76.889709;
 
     map = L.map('map', { zoomControl: true, attributionControl: true })
-        .setView([startLat, startLng], state.lat ? 15 : 11);
+        .setView([startLat, startLng], state.lat ? 15 : 12);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19, attribution: '&copy; OpenStreetMap'
@@ -1545,9 +1676,9 @@ function initMap() {
         setMapMarker(lat, lng);
         mapHint.innerHTML = t('locateAddress');
         const addr = await reverseGeocode(lat, lng);
-        tempLocation = { lat, lng, address: addr };
-        mapHint.innerHTML = `<strong>${t('chosen')}:</strong> ${escapeHtml(addr)}`;
-        renderChosenLocation(addr);
+        tempLocation = { lat, lng, address: addr || t('locationUnknown') };
+        mapHint.innerHTML = `<strong>${t('chosen')}:</strong> ${escapeHtml(addr || t('locationUnknown'))}`;
+        renderChosenLocation(addr || t('locationUnknown'));
     });
 }
 
@@ -1594,7 +1725,7 @@ btnSearchCity.addEventListener('click', () => {
             map.setView([state.lat, state.lng], 15);
             setMapMarker(state.lat, state.lng);
         } else if (map) {
-            map.setView([55.7558, 37.6173], 11);
+            map.setView([43.238949, 76.889709], 12);
         }
         if (map) map.invalidateSize();
     }, 250);
@@ -1621,9 +1752,9 @@ mapSearch.addEventListener('input', () => {
                 setMapMarker(lat, lng);
                 mapHint.innerHTML = t('locateAddress');
                 const addr = await reverseGeocode(lat, lng);
-                tempLocation = { lat, lng, address: addr };
-                mapHint.innerHTML = `<strong>${t('chosen')}:</strong> ${escapeHtml(addr)}`;
-                renderChosenLocation(addr);
+                tempLocation = { lat, lng, address: addr || t('locationUnknown') };
+                mapHint.innerHTML = `<strong>${t('chosen')}:</strong> ${escapeHtml(addr || t('locationUnknown'))}`;
+                renderChosenLocation(addr || t('locationUnknown'));
             });
             mapSuggestions.appendChild(el);
         });
