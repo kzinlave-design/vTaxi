@@ -2,14 +2,15 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>вТакси</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700&family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
 
 <style>
     * {
@@ -18,1016 +19,299 @@
         box-sizing: border-box;
         font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
+        -webkit-tap-highlight-color: transparent;
     }
-
     html, body { height: 100%; width: 100%; overflow: hidden; }
-
-    body {
-        background: #05070d;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-        position: relative;
-    }
-
+    body { background: #05070d; display: flex; align-items: center; justify-content: center; position: relative; }
     ::-webkit-scrollbar { width: 0; height: 0; }
     * { scrollbar-width: none; }
 
-    /* ============ ГРАДИЕНТНЫЕ ПЯТНА ============ */
-    .blob {
+    /* ===================== КАРТА (ТОЛЬКО ДЛЯ ТАКСИСТА) ===================== */
+    #bg-map {
         position: fixed;
-        border-radius: 50%;
-        filter: blur(90px);
-        opacity: 0.7;
+        inset: 0;
         z-index: 0;
-        will-change: transform;
-        pointer-events: none;
+        background: #0a0f1a;
+        display: none;
     }
+    #bg-map.visible { display: block; }
 
-    .blob-1 {
-        width: 55vmax; height: 55vmax;
-        background: radial-gradient(circle, #1e40af, transparent 70%);
-        top: -20vmax; left: -20vmax;
-        animation: float1 22s infinite alternate ease-in-out;
-    }
-    .blob-2 {
-        width: 60vmax; height: 60vmax;
-        background: radial-gradient(circle, #6b21a8, transparent 70%);
-        bottom: -25vmax; right: -20vmax;
-        animation: float2 26s infinite alternate ease-in-out;
-    }
-    .blob-3 {
-        width: 45vmax; height: 45vmax;
-        background: radial-gradient(circle, #0e7490, transparent 70%);
-        top: 40%; left: 55%;
-        animation: float3 20s infinite alternate ease-in-out;
-    }
-    .blob-4 {
-        width: 40vmax; height: 40vmax;
-        background: radial-gradient(circle, #be123c, transparent 70%);
-        bottom: 5%; left: 0%;
-        animation: float4 28s infinite alternate ease-in-out;
-        opacity: 0.45;
-    }
+    .leaflet-container { background: #0a0f1a !important; font-family: 'Manrope', sans-serif !important; }
+    .leaflet-tile { filter: brightness(0.85) contrast(1.05) saturate(0.9) hue-rotate(180deg) invert(1) hue-rotate(180deg); }
+    .leaflet-control-zoom { border: none !important; box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important; border-radius: 12px !important; overflow: hidden; }
+    .leaflet-control-zoom a { background: rgba(20, 25, 40, 0.9) !important; color: #c7d2fe !important; border: 1px solid rgba(255,255,255,0.1) !important; font-size: 18px !important; width: 32px !important; height: 32px !important; line-height: 30px !important; }
+    .leaflet-control-attribution { background: rgba(10, 15, 26, 0.7) !important; color: rgba(255,255,255,0.5) !important; font-size: 9px !important; padding: 2px 6px !important; }
+    .leaflet-control-attribution a { color: #a5b4fc !important; }
 
+    /* ===================== ФОНОВЫЕ ПЯТНА ===================== */
+    .blob { position: fixed; border-radius: 50%; filter: blur(90px); opacity: 0.55; z-index: 1; will-change: transform; pointer-events: none; }
+    .blob-1 { width: 55vmax; height: 55vmax; background: radial-gradient(circle, #1e40af, transparent 70%); top: -20vmax; left: -20vmax; animation: float1 22s infinite alternate ease-in-out; }
+    .blob-2 { width: 60vmax; height: 60vmax; background: radial-gradient(circle, #6b21a8, transparent 70%); bottom: -25vmax; right: -20vmax; animation: float2 26s infinite alternate ease-in-out; }
+    .blob-3 { width: 45vmax; height: 45vmax; background: radial-gradient(circle, #0e7490, transparent 70%); top: 40%; left: 55%; animation: float3 20s infinite alternate ease-in-out; opacity: 0.35; }
+    .blob-4 { width: 40vmax; height: 40vmax; background: radial-gradient(circle, #be123c, transparent 70%); bottom: 5%; left: 0%; animation: float4 28s infinite alternate ease-in-out; opacity: 0.3; }
     @keyframes float1 { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(8vmax, 6vmax) scale(1.15); } }
     @keyframes float2 { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(-7vmax, -5vmax) scale(1.1); } }
     @keyframes float3 { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(-5vmax, 8vmax) scale(1.2); } }
     @keyframes float4 { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(6vmax, -6vmax) scale(1.05); } }
 
-    /* ============ ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКА ============ */
+    /* ===================== ЯЗЫК ===================== */
     .lang-switch {
-        position: fixed;
-        top: 24px; right: 24px;
-        z-index: 1000;
-        display: flex;
-        gap: 4px;
-        padding: 4px;
-        background: rgba(255, 255, 255, 0.06);
+        position: fixed; top: 20px; right: 20px; z-index: 1000;
+        display: flex; gap: 4px; padding: 4px;
+        background: rgba(10, 15, 26, 0.7);
         backdrop-filter: blur(20px) saturate(180%);
         -webkit-backdrop-filter: blur(20px) saturate(180%);
         border: 1px solid rgba(255, 255, 255, 0.12);
         border-radius: 16px;
-        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        animation: langIn 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.3s backwards;
+        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
     }
-
-    @keyframes langIn {
-        from { opacity: 0; transform: translateY(-15px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    .lang-btn {
-        padding: 8px 16px;
-        border: none;
-        background: transparent;
-        color: rgba(255, 255, 255, 0.55);
-        font-family: 'Manrope', sans-serif;
-        font-size: 0.78rem;
-        font-weight: 700;
-        letter-spacing: 1.2px;
-        cursor: pointer;
-        border-radius: 12px;
-        transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .lang-btn::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(135deg, #4f46e5, #7c3aed);
-        border-radius: 12px;
-        opacity: 0;
-        transform: scale(0.8);
-        transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-        z-index: -1;
-    }
-
-    .lang-btn:hover { color: rgba(255, 255, 255, 0.85); }
+    .lang-btn { padding: 8px 14px; border: none; background: transparent; color: rgba(255,255,255,0.55); font-family: 'Manrope', sans-serif; font-size: 0.78rem; font-weight: 700; letter-spacing: 1.2px; cursor: pointer; border-radius: 12px; transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1); position: relative; overflow: hidden; }
+    .lang-btn::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 12px; opacity: 0; transform: scale(0.8); transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1); z-index: -1; }
     .lang-btn.active { color: #fff; }
-    .lang-btn.active::before {
-        opacity: 1;
-        transform: scale(1);
-        box-shadow: 0 8px 20px -6px rgba(99, 102, 241, 0.7);
-    }
+    .lang-btn.active::before { opacity: 1; transform: scale(1); }
+    .lang-divider { width: 1px; background: rgba(255, 255, 255, 0.1); margin: 6px 0; border-radius: 1px; }
 
-    .lang-divider {
-        width: 1px;
-        background: rgba(255, 255, 255, 0.1);
-        margin: 6px 0;
-        border-radius: 1px;
-    }
-
-    /* ============ ОСНОВНОЙ КОНТЕЙНЕР ============ */
-    .glass {
-        position: relative;
-        z-index: 10;
-        width: 100%;
-        max-width: 440px;
-        background: rgba(255, 255, 255, 0.045);
-        backdrop-filter: blur(28px) saturate(180%);
-        -webkit-backdrop-filter: blur(28px) saturate(180%);
-        border-radius: 38px;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        box-shadow:
-            0 40px 80px -20px rgba(0, 0, 0, 0.8),
-            inset 0 1px 0 rgba(255, 255, 255, 0.15),
-            inset 0 -1px 0 rgba(255, 255, 255, 0.03);
-        padding: 40px 32px;
-        color: #fff;
-        overflow: hidden;
-        transition: opacity 0.5s ease;
-        max-height: 92vh;
-        overflow-y: auto;
-    }
-
-    .glass::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(135deg, rgba(255,255,255,0.10) 0%, transparent 40%, transparent 60%, rgba(255,255,255,0.04) 100%);
-        pointer-events: none;
-        border-radius: 38px;
-        z-index: 0;
-    }
-
-    /* ============ ЭКРАНЫ ============ */
-    .screen {
-        display: none;
-        flex-direction: column;
-        animation: screenIn 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-        position: relative;
-        z-index: 2;
-    }
+    /* ===================== ПРИЛОЖЕНИЕ ===================== */
+    .app { position: fixed; inset: 0; z-index: 5; display: flex; flex-direction: column; pointer-events: none; }
+    .screen { display: none; flex-direction: column; width: 100%; height: 100%; pointer-events: none; }
     .screen.active { display: flex; }
 
-    @keyframes screenIn {
-        from { opacity: 0; transform: translateY(12px) scale(0.98); }
-        to { opacity: 1; transform: translateY(0) scale(1); }
+    .top-bar { position: absolute; top: 20px; left: 20px; right: 90px; z-index: 500; pointer-events: auto; display: flex; align-items: center; gap: 12px; }
+    .brand-pill { display: flex; align-items: center; gap: 10px; padding: 10px 18px; background: rgba(10, 15, 26, 0.75); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); border: 1px solid rgba(255,255,255,0.12); border-radius: 100px; box-shadow: 0 10px 30px -10px rgba(0,0,0,0.7); }
+    .brand-logo { font-family: 'Playfair Display', serif; font-weight: 800; font-size: 1.3rem; letter-spacing: -0.5px; background: linear-gradient(135deg, #ffffff 0%, #c7d2fe 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .brand-dot { width: 6px; height: 6px; border-radius: 50%; background: #34d399; box-shadow: 0 0 10px rgba(52,211,153,0.9); animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+    .bottom-sheet {
+        position: absolute; bottom: 0; left: 0; right: 0; z-index: 500; pointer-events: auto;
+        background: rgba(10, 15, 26, 0.85);
+        backdrop-filter: blur(32px) saturate(180%);
+        -webkit-backdrop-filter: blur(32px) saturate(180%);
+        border-top: 1px solid rgba(255,255,255,0.12);
+        border-radius: 32px 32px 0 0;
+        box-shadow: 0 -20px 60px -20px rgba(0,0,0,0.9);
+        padding: 12px 22px 26px;
+        max-height: 80vh;
+        overflow-y: auto;
+        animation: sheetIn 0.5s cubic-bezier(0.22, 1, 0.36, 1);
     }
+    @keyframes sheetIn { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .sheet-handle { width: 44px; height: 5px; border-radius: 100px; background: rgba(255,255,255,0.2); margin: 0 auto 16px; }
 
-    /* ============ ЛОГОТИП ============ */
-    .logo-wrap {
-        text-align: center;
-        margin-bottom: 14px;
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
+    /* ===================== РЕГИСТРАЦИЯ ===================== */
+    .logo-wrap { text-align: center; margin-bottom: 8px; }
+    .logo { font-family: 'Playfair Display', serif; font-weight: 800; font-size: 2.6rem; letter-spacing: -1.5px; line-height: 1; background: linear-gradient(135deg, #ffffff 0%, #e0e7ff 40%, #a5b4fc 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; filter: drop-shadow(0 4px 20px rgba(129, 140, 248, 0.35)); position: relative; }
+    .logo::after { content: ''; position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); width: 44px; height: 2px; background: linear-gradient(90deg, transparent, #818cf8, transparent); border-radius: 2px; opacity: 0.6; }
+    .brand-sub { text-align: center; font-size: 0.68rem; font-weight: 500; letter-spacing: 3.5px; text-transform: uppercase; color: rgba(255,255,255,0.35); margin-bottom: 22px; }
 
-    .logo {
-        font-family: 'Playfair Display', serif;
-        font-weight: 800;
-        font-size: 3.4rem;
-        letter-spacing: -2px;
-        line-height: 1;
-        background: linear-gradient(135deg, #ffffff 0%, #e0e7ff 40%, #a5b4fc 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        filter: drop-shadow(0 4px 20px rgba(129, 140, 248, 0.35));
-        position: relative;
-    }
+    .avatar-section { display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; }
+    .avatar-label { font-size: 0.72rem; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 10px; }
+    .avatar-wrap { position: relative; width: 108px; height: 108px; }
+    .avatar-circle { width: 108px; height: 108px; border-radius: 50%; background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.12)); border: 2px solid rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1); box-shadow: 0 15px 35px -12px rgba(79, 70, 229, 0.5); position: relative; }
+    .avatar-circle:hover { transform: scale(1.04); border-color: rgba(165,180,252,0.5); }
+    .avatar-circle:active { transform: scale(0.98); }
+    .avatar-circle img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .avatar-placeholder { display: flex; flex-direction: column; align-items: center; gap: 4px; color: rgba(199, 210, 254, 0.7); }
+    .avatar-placeholder svg { width: 30px; height: 30px; stroke: currentColor; stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .avatar-placeholder span { font-size: 0.6rem; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; }
+    .avatar-badge { position: absolute; bottom: 2px; right: 2px; width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, #4f46e5, #7c3aed); border: 3px solid #0a0f1a; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 18px -4px rgba(99,102,241,0.8); transition: transform 0.3s ease; cursor: pointer; }
+    .avatar-badge:hover { transform: scale(1.1); }
+    .avatar-badge svg { width: 15px; height: 15px; stroke: #fff; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 
-    .logo::after {
-        content: '';
-        position: absolute;
-        bottom: -8px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 48px;
-        height: 2px;
-        background: linear-gradient(90deg, transparent, #818cf8, transparent);
-        border-radius: 2px;
-        opacity: 0.6;
-    }
-
-    .brand-sub {
-        text-align: center;
-        font-family: 'Manrope', sans-serif;
-        font-size: 0.7rem;
-        font-weight: 500;
-        letter-spacing: 4px;
-        text-transform: uppercase;
-        color: rgba(255,255,255,0.35);
-        margin-bottom: 32px;
-        animation: fadeInSlow 1s ease 0.3s backwards;
-    }
-
-    @keyframes fadeInSlow {
-        from { opacity: 0; transform: translateY(6px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ============ ПОЛЯ ВВОДА ============ */
-    .field { margin-bottom: 18px; position: relative; }
-
-    .field-label {
-        display: block;
-        font-size: 0.72rem;
-        font-weight: 600;
-        letter-spacing: 1.5px;
-        text-transform: uppercase;
-        color: rgba(255,255,255,0.5);
-        margin-bottom: 8px;
-        padding-left: 4px;
-    }
-
-    .field-input {
-        width: 100%;
-        padding: 16px 20px;
-        border-radius: 18px;
-        background: rgba(0, 0, 0, 0.25);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        font-size: 0.98rem;
-        font-weight: 500;
-        color: #fff;
-        outline: none;
-        transition: all 0.3s ease;
-        box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
-        font-family: 'Manrope', sans-serif;
-    }
-
+    /* ===================== ПОЛЯ ===================== */
+    .field { margin-bottom: 14px; position: relative; }
+    .field-label { display: flex; align-items: center; gap: 6px; font-size: 0.7rem; font-weight: 600; letter-spacing: 1.3px; text-transform: uppercase; color: rgba(255,255,255,0.55); margin-bottom: 7px; padding-left: 4px; }
+    .field-label svg { width: 13px; height: 13px; stroke: rgba(165, 180, 252, 0.7); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .field-input { width: 100%; padding: 15px 18px; border-radius: 16px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); font-size: 1rem; font-weight: 500; color: #fff; outline: none; transition: all 0.3s ease; box-shadow: inset 0 2px 8px rgba(0,0,0,0.3); font-family: 'Manrope', sans-serif; }
     .field-input::placeholder { color: rgba(255,255,255,0.28); font-weight: 400; }
+    .field-input:focus { border-color: rgba(165, 180, 252, 0.6); background: rgba(0, 0, 0, 0.4); box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.12), inset 0 2px 8px rgba(0,0,0,0.3); }
 
-    .field-input:focus {
-        border-color: rgba(165, 180, 252, 0.6);
-        background: rgba(0, 0, 0, 0.35);
-        box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.12), inset 0 2px 8px rgba(0,0,0,0.3);
-        transform: translateY(-2px);
-    }
-
-    /* ============ КНОПКИ ============ */
-    .btn {
-        width: 100%;
-        padding: 17px;
-        border-radius: 18px;
-        border: 1px solid rgba(255,255,255,0.15);
-        font-family: 'Manrope', sans-serif;
-        font-size: 1rem;
-        font-weight: 700;
-        letter-spacing: 0.3px;
-        color: #fff;
-        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-        cursor: pointer;
-        transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-        box-shadow: 0 15px 30px -10px rgba(79, 70, 229, 0.6), inset 0 1px 0 rgba(255,255,255,0.25);
-        position: relative;
-        overflow: hidden;
-        margin-top: 8px;
-    }
-
-    .btn::after {
-        content: '';
-        position: absolute;
-        top: 0; left: -100%;
-        width: 100%; height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
-        transition: left 0.7s ease;
-    }
-
-    .btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 22px 40px -10px rgba(124, 58, 237, 0.7), inset 0 1px 0 rgba(255,255,255,0.35);
-    }
-    .btn:hover::after { left: 100%; }
+    /* ===================== КНОПКИ ===================== */
+    .btn { width: 100%; padding: 16px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.15); font-family: 'Manrope', sans-serif; font-size: 0.98rem; font-weight: 700; letter-spacing: 0.3px; color: #fff; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); cursor: pointer; transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1); box-shadow: 0 15px 30px -10px rgba(79, 70, 229, 0.6), inset 0 1px 0 rgba(255,255,255,0.25); position: relative; overflow: hidden; margin-top: 8px; }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 22px 40px -10px rgba(124, 58, 237, 0.7); }
     .btn:active { transform: translateY(0) scale(0.99); }
-
-    .btn-ghost {
-        background: rgba(255,255,255,0.06);
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
-        border: 1px solid rgba(255,255,255,0.12);
-        color: rgba(255,255,255,0.85);
-        font-weight: 600;
-    }
+    .btn-ghost { background: rgba(255,255,255,0.06); box-shadow: inset 0 1px 0 rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.85); font-weight: 600; }
     .btn-ghost:hover { background: rgba(255,255,255,0.12); }
+    .btn-success { background: linear-gradient(135deg, #059669 0%, #10b981 100%); box-shadow: 0 15px 30px -10px rgba(16, 185, 129, 0.6); }
+    .btn-danger { background: linear-gradient(135deg, #be123c 0%, #e11d48 100%); box-shadow: 0 15px 30px -10px rgba(225, 29, 72, 0.6); }
+    .btn-nav { background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%); box-shadow: 0 15px 30px -10px rgba(6, 182, 212, 0.6); }
 
-    .btn-success {
-        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-        box-shadow: 0 15px 30px -10px rgba(16, 185, 129, 0.6), inset 0 1px 0 rgba(255,255,255,0.25);
-    }
-    .btn-success:hover {
-        box-shadow: 0 22px 40px -10px rgba(16, 185, 129, 0.8), inset 0 1px 0 rgba(255,255,255,0.35);
-    }
-
-    .btn-danger {
-        background: linear-gradient(135deg, #be123c 0%, #e11d48 100%);
-        box-shadow: 0 15px 30px -10px rgba(225, 29, 72, 0.6), inset 0 1px 0 rgba(255,255,255,0.25);
-    }
-    .btn-danger:hover {
-        box-shadow: 0 22px 40px -10px rgba(225, 29, 72, 0.8), inset 0 1px 0 rgba(255,255,255,0.35);
-    }
-
-    /* ============ РАЗДЕЛИТЕЛЬ ============ */
-    .divider {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        margin: 22px 0 16px;
-        font-size: 0.7rem;
-        font-weight: 600;
-        letter-spacing: 2px;
-        text-transform: uppercase;
-        color: rgba(255,255,255,0.3);
-    }
-    .divider::before, .divider::after {
-        content: ''; flex: 1; height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
-    }
-
-    .link {
-        text-align: center;
-        font-size: 0.85rem;
-        color: rgba(255,255,255,0.5);
-        font-weight: 500;
-    }
-    .link span {
-        color: #a5b4fc;
-        font-weight: 700;
-        cursor: pointer;
-        transition: color 0.2s;
-    }
+    .divider { display: flex; align-items: center; gap: 14px; margin: 18px 0 12px; font-size: 0.7rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.3); }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent); }
+    .link { text-align: center; font-size: 0.85rem; color: rgba(255,255,255,0.5); font-weight: 500; }
+    .link span { color: #a5b4fc; font-weight: 700; cursor: pointer; transition: color 0.2s; }
     .link span:hover { color: #c7d2fe; }
 
-    /* ============ ЭКРАН РОЛИ ============ */
-    .role-title {
-        font-family: 'Playfair Display', serif;
-        font-size: 2.2rem;
-        font-weight: 700;
-        letter-spacing: -0.5px;
-        text-align: center;
-        margin-bottom: 6px;
-        background: linear-gradient(135deg, #ffffff, #c7d2fe);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    .role-desc {
-        text-align: center;
-        font-size: 0.88rem;
-        font-weight: 400;
-        color: rgba(255,255,255,0.45);
-        margin-bottom: 34px;
-    }
-
-    .role-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 14px;
-        margin-bottom: 28px;
-    }
-
-    .role-card {
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 24px;
-        padding: 28px 14px;
-        cursor: pointer;
-        transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-        text-align: center;
-        position: relative;
-        overflow: hidden;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
-    }
-
-    .role-card::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(circle at 50% 0%, rgba(165,180,252,0.2), transparent 70%);
-        opacity: 0;
-        transition: opacity 0.4s;
-    }
-
-    .role-card:hover {
-        transform: translateY(-6px);
-        background: rgba(255,255,255,0.08);
-        border-color: rgba(165,180,252,0.45);
-        box-shadow: 0 25px 45px -15px rgba(99, 102, 241, 0.55), inset 0 1px 0 rgba(255,255,255,0.15);
-    }
-    .role-card:hover::before { opacity: 1; }
+    /* ===================== РОЛИ ===================== */
+    .role-title { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 700; letter-spacing: -0.5px; text-align: center; margin-bottom: 4px; background: linear-gradient(135deg, #ffffff, #c7d2fe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .role-desc { text-align: center; font-size: 0.85rem; color: rgba(255,255,255,0.45); margin-bottom: 24px; }
+    .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    .role-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 22px; padding: 24px 12px; cursor: pointer; transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1); text-align: center; box-shadow: inset 0 1px 0 rgba(255,255,255,0.08); }
+    .role-card:hover { transform: translateY(-6px); background: rgba(255,255,255,0.08); border-color: rgba(165,180,252,0.45); box-shadow: 0 25px 45px -15px rgba(99, 102, 241, 0.55); }
     .role-card:active { transform: translateY(-3px) scale(0.98); }
+    .role-icon { width: 50px; height: 50px; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; border-radius: 16px; background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.15)); border: 1px solid rgba(255,255,255,0.12); color: #c7d2fe; transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1); }
+    .role-card:hover .role-icon { transform: scale(1.1) rotate(-3deg); background: linear-gradient(135deg, rgba(99,102,241,0.5), rgba(139,92,246,0.3)); }
+    .role-icon svg { width: 25px; height: 25px; stroke: currentColor; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .role-name { font-size: 0.98rem; font-weight: 700; color: #fff; }
+    .role-hint { font-size: 0.7rem; font-weight: 500; color: rgba(255,255,255,0.4); margin-top: 4px; }
 
-    .role-icon {
-        width: 52px;
-        height: 52px;
-        margin: 0 auto 14px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 16px;
-        background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.15));
-        border: 1px solid rgba(255,255,255,0.12);
-        color: #c7d2fe;
-        position: relative;
-        z-index: 1;
-        transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-    }
+    /* ===================== ПРОФИЛЬ БАР ===================== */
+    .user-bar { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; margin-bottom: 16px; }
+    .user-avatar-mini { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, rgba(99,102,241,0.35), rgba(139,92,246,0.2)); border: 2px solid rgba(165,180,252,0.3); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; box-shadow: 0 8px 20px -6px rgba(99,102,241,0.5); }
+    .user-avatar-mini img { width: 100%; height: 100%; object-fit: cover; }
+    .user-avatar-mini svg { width: 20px; height: 20px; stroke: #c7d2fe; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .user-info { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
+    .user-hello { font-size: 0.64rem; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: rgba(255,255,255,0.4); }
+    .user-nick { font-size: 0.92rem; font-weight: 700; background: linear-gradient(135deg, #a5b4fc, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .icon-btn { width: 38px; height: 38px; border-radius: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.25s ease; padding: 0; }
+    .icon-btn:hover { background: rgba(255,255,255,0.14); transform: translateY(-1px); }
+    .icon-btn svg { width: 18px; height: 18px; stroke: rgba(255,255,255,0.8); stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 
-    .role-card:hover .role-icon {
-        transform: scale(1.1) rotate(-3deg);
-        background: linear-gradient(135deg, rgba(99,102,241,0.5), rgba(139,92,246,0.3));
-        box-shadow: 0 12px 28px -6px rgba(99,102,241,0.6);
-    }
+    /* ===================== ЛОКАЦИЯ ===================== */
+    .location { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: linear-gradient(135deg, rgba(79,70,229,0.12), rgba(124,58,237,0.08)); border: 1px solid rgba(165,180,252,0.2); border-radius: 18px; margin-bottom: 10px; }
+    .location-pin { width: 32px; height: 32px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #4f46e5, #7c3aed); box-shadow: 0 6px 14px -4px rgba(99,102,241,0.7); flex-shrink: 0; animation: pinPulse 2.5s ease-in-out infinite; }
+    @keyframes pinPulse { 0%, 100% { box-shadow: 0 6px 14px -4px rgba(99,102,241,0.7); } 50% { box-shadow: 0 6px 24px -2px rgba(99,102,241,1); } }
+    .location-pin svg { width: 17px; height: 17px; stroke: #fff; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .location-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+    .location-label { font-size: 0.62rem; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: rgba(255,255,255,0.45); }
+    .location-value { font-size: 0.88rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    .role-icon svg {
-        width: 26px;
-        height: 26px;
-        stroke: currentColor;
-        stroke-width: 1.8;
-        fill: none;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-        animation: iconFloat 3s ease-in-out infinite;
-    }
+    /* ===================== ВВОД АДРЕСА (РУЧНОЙ) ===================== */
+    .addr-input-wrap { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+    .addr-input-wrap .field-input { flex: 1; padding: 13px 16px; font-size: 0.9rem; }
+    .addr-hint { font-size: 0.68rem; color: rgba(255,255,255,0.4); padding-left: 4px; margin-bottom: 10px; }
 
-    @keyframes iconFloat {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-3px); }
-    }
-
-    .role-name {
-        font-size: 1rem;
-        font-weight: 700;
-        letter-spacing: -0.2px;
-        color: #fff;
-        position: relative;
-        z-index: 1;
-    }
-
-    .role-hint {
-        font-size: 0.72rem;
-        font-weight: 500;
-        color: rgba(255,255,255,0.4);
-        margin-top: 4px;
-        position: relative;
-        z-index: 1;
-    }
-
-    /* ============ ЭКРАН ПОЕЗДКИ ============ */
-    .user-bar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 12px 16px;
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 20px;
-        margin-bottom: 20px;
-    }
-
-    .user-info { display: flex; flex-direction: column; gap: 2px; }
-
-    .user-hello {
-        font-size: 0.7rem;
-        font-weight: 600;
-        letter-spacing: 1.2px;
-        text-transform: uppercase;
-        color: rgba(255,255,255,0.4);
-    }
-
-    .user-nick {
-        font-size: 0.95rem;
-        font-weight: 700;
-        background: linear-gradient(135deg, #a5b4fc, #818cf8);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    .logout {
-        background: rgba(255,255,255,0.06);
-        border: 1px solid rgba(255,255,255,0.1);
-        color: rgba(255,255,255,0.7);
-        padding: 8px 14px;
-        border-radius: 12px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.25s ease;
-        font-family: 'Manrope', sans-serif;
-    }
-    .logout:hover { background: rgba(255,255,255,0.14); color: #fff; }
-
-    .location {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 14px 18px;
-        background: linear-gradient(135deg, rgba(79,70,229,0.12), rgba(124,58,237,0.08));
-        border: 1px solid rgba(165,180,252,0.2);
-        border-radius: 20px;
-        margin-bottom: 14px;
-        transition: all 0.3s ease;
-    }
-
-    .location-pin {
-        width: 34px;
-        height: 34px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: linear-gradient(135deg, #4f46e5, #7c3aed);
-        box-shadow: 0 6px 14px -4px rgba(99,102,241,0.7);
-        flex-shrink: 0;
-        animation: pinPulse 2.5s ease-in-out infinite;
-    }
-
-    @keyframes pinPulse {
-        0%, 100% { box-shadow: 0 6px 14px -4px rgba(99,102,241,0.7); }
-        50% { box-shadow: 0 6px 24px -2px rgba(99,102,241,1); }
-    }
-
-    .location-pin svg {
-        width: 18px; height: 18px;
-        stroke: #fff; stroke-width: 2; fill: none;
-        stroke-linecap: round; stroke-linejoin: round;
-    }
-
-    .location-text {
-        display: flex; flex-direction: column; gap: 1px;
-        min-width: 0; flex: 1;
-    }
-
-    .location-label {
-        font-size: 0.68rem;
-        font-weight: 600;
-        letter-spacing: 1.2px;
-        text-transform: uppercase;
-        color: rgba(255,255,255,0.45);
-    }
-
-    .location-value {
-        font-size: 0.92rem;
-        font-weight: 700;
-        color: #fff;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .loc-actions {
-        display: flex;
-        gap: 8px;
-        margin-top: 8px;
-        margin-bottom: 14px;
-    }
-
-    .loc-btn {
-        flex: 1;
-        padding: 9px 12px;
-        border-radius: 12px;
-        border: 1px solid rgba(255,255,255,0.12);
-        background: rgba(255,255,255,0.05);
-        color: rgba(255,255,255,0.75);
-        font-size: 0.72rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.25s ease;
-        font-family: 'Manrope', sans-serif;
-    }
-    .loc-btn:hover {
-        background: rgba(255,255,255,0.12);
-        color: #fff;
-        transform: translateY(-1px);
-    }
-
-    .section-label {
-        font-size: 0.7rem;
-        font-weight: 700;
-        letter-spacing: 1.8px;
-        text-transform: uppercase;
-        color: rgba(255,255,255,0.4);
-        margin-bottom: 12px;
-        padding-left: 4px;
-    }
-
-    .orders {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        max-height: 280px;
-        overflow-y: auto;
-        padding-right: 4px;
-    }
-
-    .order {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 16px 18px;
-        background: rgba(255,255,255,0.035);
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 20px;
-        cursor: pointer;
-        transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-        animation: orderIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
-    }
-
-    .order:hover {
-        background: rgba(255,255,255,0.09);
-        border-color: rgba(165,180,252,0.4);
-        transform: translateX(4px);
-        box-shadow: 0 15px 30px -12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1);
-    }
-
-    @keyframes orderIn {
-        from { opacity: 0; transform: translateY(12px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    .order-route {
-        display: flex; flex-direction: column; gap: 6px;
-        min-width: 0; flex: 1;
-    }
-
-    .route-line {
-        display: flex; align-items: center; gap: 8px;
-        font-size: 0.85rem; font-weight: 600; color: #fff;
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-
-    .dot {
-        width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
-    }
+    /* ===================== СПИСКИ / КАРТОЧКИ ===================== */
+    .section-label { font-size: 0.66rem; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 10px; padding-left: 4px; }
+    .orders { display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow-y: auto; padding-right: 4px; }
+    .order { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; cursor: pointer; transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1); animation: orderIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+    .order:hover { background: rgba(255,255,255,0.09); border-color: rgba(165,180,252,0.4); transform: translateX(4px); }
+    @keyframes orderIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .order-route { display: flex; flex-direction: column; gap: 5px; min-width: 0; flex: 1; }
+    .route-line { display: flex; align-items: center; gap: 8px; font-size: 0.84rem; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
     .dot-start { background: #34d399; box-shadow: 0 0 8px rgba(52,211,153,0.7); }
     .dot-end { background: #f472b6; box-shadow: 0 0 8px rgba(244,114,182,0.7); }
+    .order-meta { display: flex; gap: 10px; font-size: 0.7rem; font-weight: 500; color: rgba(255,255,255,0.45); padding-left: 14px; }
+    .order-price { font-size: 1.05rem; font-weight: 800; color: #a7f3d0; white-space: nowrap; letter-spacing: -0.3px; }
 
-    .order-meta {
-        display: flex; gap: 10px;
-        font-size: 0.72rem; font-weight: 500;
-        color: rgba(255,255,255,0.45);
-        padding-left: 14px;
-    }
-
-    .order-price {
-        font-size: 1.05rem; font-weight: 800;
-        color: #a7f3d0; white-space: nowrap;
-        letter-spacing: -0.3px;
-    }
-
-    .empty {
-        text-align: center;
-        padding: 30px 20px;
-        color: rgba(255,255,255,0.4);
-        font-size: 0.85rem;
-        font-weight: 500;
-    }
-
-    .loading {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 12px;
-        padding: 24px;
-        color: rgba(255,255,255,0.6);
-        font-size: 0.85rem;
-        font-weight: 500;
-    }
-
-    .spinner {
-        width: 20px; height: 20px;
-        border: 2px solid rgba(165,180,252,0.2);
-        border-top-color: #a5b4fc;
-        border-radius: 50%;
-        animation: spin 0.9s linear infinite;
-    }
-
+    .empty { text-align: center; padding: 30px 20px; color: rgba(255,255,255,0.4); font-size: 0.85rem; font-weight: 500; }
+    .loading { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 24px; color: rgba(255,255,255,0.6); font-size: 0.85rem; font-weight: 500; }
+    .spinner { width: 20px; height: 20px; border: 2px solid rgba(165,180,252,0.2); border-top-color: #a5b4fc; border-radius: 50%; animation: spin 0.9s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .active-order {
-        padding: 18px;
-        background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(5,150,105,0.08));
-        border: 1px solid rgba(16,185,129,0.35);
-        border-radius: 22px;
-        margin-bottom: 16px;
-        animation: screenIn 0.5s ease;
-    }
-
-    .active-title {
-        font-size: 0.7rem;
-        font-weight: 700;
-        letter-spacing: 1.5px;
-        text-transform: uppercase;
-        color: #6ee7b7;
-        margin-bottom: 10px;
-    }
-
-    .active-price {
-        font-size: 1.6rem;
-        font-weight: 800;
-        color: #a7f3d0;
-        margin-bottom: 12px;
-        letter-spacing: -0.5px;
-    }
-
-    .active-route {
-        display: flex; flex-direction: column; gap: 8px;
-        margin-bottom: 16px;
-    }
-
+    .active-order { padding: 18px; background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(5,150,105,0.08)); border: 1px solid rgba(16,185,129,0.35); border-radius: 22px; margin-bottom: 14px; }
+    .active-title { font-size: 0.66rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #6ee7b7; margin-bottom: 10px; }
+    .active-price { font-size: 1.5rem; font-weight: 800; color: #a7f3d0; margin-bottom: 12px; letter-spacing: -0.5px; }
+    .active-route { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
     .active-actions { display: flex; gap: 10px; }
-    .active-actions .btn { margin-top: 0; padding: 13px; font-size: 0.9rem; }
+    .active-actions .btn { margin-top: 0; padding: 13px; font-size: 0.88rem; }
 
-    .modal-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.7);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        z-index: 100;
-        padding: 20px;
-        animation: screenIn 0.3s ease;
-    }
+    /* ===================== МОДАЛКИ ===================== */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 20px; overflow-y: auto; }
     .modal-overlay.active { display: flex; }
+    .modal { background: rgba(15, 20, 35, 0.96); backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px); border: 1px solid rgba(255,255,255,0.15); border-radius: 28px; padding: 26px; width: 100%; max-width: 400px; animation: modalIn 0.4s cubic-bezier(0.22, 1, 0.36, 1); max-height: 90vh; overflow-y: auto; margin: auto; color: #fff; }
+    @keyframes modalIn { from { opacity: 0; transform: scale(0.9) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+    .modal-title { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.3px; }
+    .modal-sub { font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-bottom: 18px; }
 
-    .modal {
-        background: rgba(20, 25, 40, 0.92);
-        backdrop-filter: blur(28px);
-        -webkit-backdrop-filter: blur(28px);
-        border: 1px solid rgba(255,255,255,0.15);
-        border-radius: 30px;
-        padding: 28px;
-        width: 100%;
-        max-width: 380px;
-        animation: modalIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-        max-height: 90vh;
-        overflow-y: auto;
-    }
+    /* ===================== НАСТРОЙКИ ===================== */
+    .settings-header { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+    .back-btn { width: 42px; height: 42px; border-radius: 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.25s ease; flex-shrink: 0; }
+    .back-btn:hover { background: rgba(255,255,255,0.14); transform: translateX(-2px); }
+    .back-btn svg { width: 20px; height: 20px; stroke: rgba(255,255,255,0.9); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .settings-title { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.5px; background: linear-gradient(135deg, #ffffff, #c7d2fe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .settings-profile { display: flex; flex-direction: column; align-items: center; margin-bottom: 24px; padding: 20px 16px; background: linear-gradient(135deg, rgba(79,70,229,0.10), rgba(124,58,237,0.05)); border: 1px solid rgba(165,180,252,0.18); border-radius: 24px; }
+    .settings-avatar-wrap { position: relative; width: 100px; height: 100px; margin-bottom: 12px; }
+    .settings-avatar { width: 100px; height: 100px; border-radius: 50%; background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.15)); border: 3px solid rgba(165,180,252,0.35); display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: 0 15px 35px -10px rgba(99, 102, 241, 0.6); }
+    .settings-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .settings-avatar svg { width: 40px; height: 40px; stroke: #c7d2fe; stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .settings-avatar-badge { position: absolute; bottom: 0; right: 0; width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #4f46e5, #7c3aed); border: 3px solid #0a0f1a; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 8px 18px -4px rgba(99,102,241,0.8); transition: transform 0.25s ease; }
+    .settings-avatar-badge:hover { transform: scale(1.1); }
+    .settings-avatar-badge svg { width: 13px; height: 13px; stroke: #fff; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .settings-name { font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 4px; text-align: center; }
+    .settings-role { font-size: 0.7rem; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: #a5b4fc; padding: 4px 12px; background: rgba(99,102,241,0.15); border: 1px solid rgba(165,180,252,0.25); border-radius: 10px; }
+    .settings-item { display: flex; align-items: center; gap: 14px; padding: 15px 16px; background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; margin-bottom: 10px; cursor: pointer; transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
+    .settings-item:hover { background: rgba(255,255,255,0.08); border-color: rgba(165,180,252,0.35); transform: translateX(4px); }
+    .settings-item:active { transform: translateX(2px) scale(0.99); }
+    .settings-icon { width: 40px; height: 40px; border-radius: 14px; background: linear-gradient(135deg, rgba(99,102,241,0.22), rgba(139,92,246,0.12)); border: 1px solid rgba(165,180,252,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .settings-icon svg { width: 19px; height: 19px; stroke: #c7d2fe; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .settings-text { flex: 1; min-width: 0; }
+    .settings-label { font-size: 0.66rem; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 2px; }
+    .settings-value { font-size: 0.92rem; font-weight: 600; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .settings-chevron { width: 18px; height: 18px; stroke: rgba(255,255,255,0.4); stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
 
-    @keyframes modalIn {
-        from { opacity: 0; transform: scale(0.9) translateY(20px); }
-        to { opacity: 1; transform: scale(1) translateY(0); }
-    }
-
-    .modal-title {
-        font-family: 'Playfair Display', serif;
-        font-size: 1.4rem;
-        font-weight: 700;
-        margin-bottom: 6px;
-        letter-spacing: -0.3px;
-    }
-
-    .modal-sub {
-        font-size: 0.82rem;
-        color: rgba(255,255,255,0.5);
-        margin-bottom: 20px;
-    }
-
-    .waiting {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 16px;
-        padding: 40px 20px;
-        text-align: center;
-    }
-
-    .radar {
-        position: relative;
-        width: 80px;
-        height: 80px;
-    }
-
-    .radar::before, .radar::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        border-radius: 50%;
-        border: 2px solid rgba(165,180,252,0.5);
-        animation: radar 2s ease-out infinite;
-    }
+    /* ===================== РАДАР ===================== */
+    .waiting { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 32px 20px; text-align: center; }
+    .radar { position: relative; width: 70px; height: 70px; }
+    .radar::before, .radar::after { content: ''; position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(165,180,252,0.5); animation: radar 2s ease-out infinite; }
     .radar::after { animation-delay: 1s; }
+    @keyframes radar { 0% { transform: scale(0.5); opacity: 1; } 100% { transform: scale(1.6); opacity: 0; } }
+    .radar-core { position: absolute; inset: 22px; border-radius: 50%; background: linear-gradient(135deg, #4f46e5, #7c3aed); box-shadow: 0 0 24px rgba(99,102,241,0.8); animation: pinPulse 2s ease-in-out infinite; }
+    .waiting-text { font-size: 0.88rem; color: rgba(255,255,255,0.6); font-weight: 500; }
 
-    @keyframes radar {
-        0% { transform: scale(0.5); opacity: 1; }
-        100% { transform: scale(1.6); opacity: 0; }
-    }
-
-    .radar-core {
-        position: absolute;
-        inset: 25px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #4f46e5, #7c3aed);
-        box-shadow: 0 0 24px rgba(99,102,241,0.8);
-        animation: pinPulse 2s ease-in-out infinite;
-    }
-
-    .waiting-text {
-        font-size: 0.9rem;
-        color: rgba(255,255,255,0.6);
-        font-weight: 500;
-    }
-
-    /* ============ КАРТА ============ */
-    .map-wrapper {
-        position: relative;
-        width: 100%;
-        height: 260px;
-        border-radius: 20px;
-        overflow: hidden;
-        margin-bottom: 14px;
-        border: 1px solid rgba(255,255,255,0.15);
-        box-shadow: 0 10px 30px -10px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1);
-    }
-
-    #map {
-        width: 100%;
-        height: 100%;
-        background: #0a0f1a;
-        z-index: 1;
-    }
-
-    .leaflet-container { background: #0a0f1a !important; font-family: 'Manrope', sans-serif !important; }
-    .leaflet-tile { filter: brightness(0.85) contrast(1.05) saturate(0.9) hue-rotate(180deg) invert(1) hue-rotate(180deg); }
-    .leaflet-control-zoom { border: none !important; box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important; border-radius: 12px !important; overflow: hidden; }
-    .leaflet-control-zoom a { background: rgba(20, 25, 40, 0.9) !important; color: #c7d2fe !important; border: 1px solid rgba(255,255,255,0.1) !important; font-size: 18px !important; width: 32px !important; height: 32px !important; line-height: 30px !important; transition: all 0.2s ease; }
-    .leaflet-control-zoom a:hover { background: rgba(99, 102, 241, 0.4) !important; color: #fff !important; }
-    .leaflet-control-attribution { background: rgba(10, 15, 26, 0.7) !important; color: rgba(255,255,255,0.5) !important; font-size: 9px !important; padding: 2px 6px !important; border-radius: 8px 0 0 0; }
-    .leaflet-control-attribution a { color: #a5b4fc !important; }
-
-    .custom-pin {
-        width: 32px; height: 32px;
-        border-radius: 50% 50% 50% 0;
-        transform: rotate(-45deg);
-        background: linear-gradient(135deg, #4f46e5, #7c3aed);
-        border: 3px solid #fff;
-        box-shadow: 0 6px 16px rgba(79, 70, 229, 0.7);
-        position: relative;
-        animation: pinDrop 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-    }
-
-    .custom-pin::after {
-        content: '';
-        position: absolute;
-        inset: 50%;
-        width: 8px; height: 8px;
-        background: #fff;
-        border-radius: 50%;
-        transform: translate(-50%, -50%);
-    }
-
-    @keyframes pinDrop {
-        0% { transform: rotate(-45deg) translateY(-30px); opacity: 0; }
-        100% { transform: rotate(-45deg) translateY(0); opacity: 1; }
-    }
-
-    .map-hint {
-        position: absolute;
-        top: 12px; left: 12px; right: 12px;
-        background: rgba(10, 15, 26, 0.85);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(165,180,252,0.25);
-        border-radius: 14px;
-        padding: 10px 14px;
-        font-size: 0.78rem;
-        font-weight: 500;
-        color: rgba(255,255,255,0.85);
-        z-index: 500;
-        text-align: center;
-        pointer-events: none;
-        animation: screenIn 0.5s ease;
-    }
-
+    /* ===================== КАРТА В МОДАЛКЕ (для таксиста) ===================== */
+    .map-wrapper { position: relative; width: 100%; height: 240px; border-radius: 18px; overflow: hidden; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.15); }
+    #map { width: 100%; height: 100%; background: #0a0f1a; z-index: 1; }
+    .custom-pin { width: 32px; height: 32px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: linear-gradient(135deg, #4f46e5, #7c3aed); border: 3px solid #fff; box-shadow: 0 6px 16px rgba(79, 70, 229, 0.7); position: relative; animation: pinDrop 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+    .custom-pin::after { content: ''; position: absolute; inset: 50%; width: 8px; height: 8px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); }
+    @keyframes pinDrop { 0% { transform: rotate(-45deg) translateY(-30px); opacity: 0; } 100% { transform: rotate(-45deg) translateY(0); opacity: 1; } }
+    .map-hint { position: absolute; top: 12px; left: 12px; right: 12px; background: rgba(10, 15, 26, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(165,180,252,0.25); border-radius: 14px; padding: 10px 14px; font-size: 0.76rem; font-weight: 500; color: rgba(255,255,255,0.85); z-index: 500; text-align: center; pointer-events: none; }
     .map-hint strong { color: #a5b4fc; }
 
-    .map-search-wrap {
-        position: relative;
-        margin-bottom: 12px;
-        z-index: 600;
-    }
-
-    .map-search-input {
-        width: 100%;
-        padding: 14px 16px 14px 42px;
-        border-radius: 14px;
-        background: rgba(0, 0, 0, 0.4);
-        border: 1px solid rgba(165,180,252,0.3);
-        color: #fff;
-        font-size: 0.9rem;
-        font-weight: 500;
-        outline: none;
-        font-family: 'Manrope', sans-serif;
-        transition: all 0.3s ease;
-    }
-
-    .map-search-input:focus {
-        border-color: rgba(165,180,252,0.7);
-        box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.15);
-    }
-
-    .map-search-input::placeholder { color: rgba(255,255,255,0.35); }
-
-    .map-search-icon {
-        position: absolute;
-        left: 14px;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 18px; height: 18px;
-        stroke: rgba(165,180,252,0.7);
-        stroke-width: 2;
-        fill: none;
-        pointer-events: none;
-    }
-
-    .map-suggestions {
-        position: absolute;
-        top: 100%; left: 0; right: 0;
-        margin-top: 6px;
-        background: rgba(20, 25, 40, 0.96);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(165,180,252,0.25);
-        border-radius: 14px;
-        max-height: 200px;
-        overflow-y: auto;
-        z-index: 700;
-        display: none;
-        box-shadow: 0 20px 40px -10px rgba(0,0,0,0.7);
-    }
-
-    .map-suggestions.active { display: block; }
-
-    .map-suggestion {
-        padding: 12px 16px;
-        font-size: 0.82rem;
-        font-weight: 500;
-        color: rgba(255,255,255,0.85);
-        cursor: pointer;
-        border-bottom: 1px solid rgba(255,255,255,0.05);
-        transition: background 0.2s ease;
-        line-height: 1.35;
-    }
-    .map-suggestion:last-child { border-bottom: none; }
-    .map-suggestion:hover { background: rgba(165,180,252,0.15); color: #fff; }
-
-    .chosen-location {
+    .route-info {
         display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 12px 16px;
-        background: rgba(16, 185, 129, 0.1);
-        border: 1px solid rgba(16, 185, 129, 0.3);
-        border-radius: 14px;
-        margin-bottom: 14px;
-        font-size: 0.82rem;
-        font-weight: 600;
-        color: #a7f3d0;
-        animation: screenIn 0.4s ease;
+        gap: 12px;
+        margin-bottom: 12px;
     }
-
-    .chosen-location svg { width: 18px; height: 18px; stroke: #6ee7b7; stroke-width: 2.2; fill: none; flex-shrink: 0; }
-    .chosen-location span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .route-info-item {
+        flex: 1;
+        padding: 10px 14px;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 14px;
+        text-align: center;
+    }
+    .route-info-label {
+        font-size: 0.6rem;
+        font-weight: 600;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.4);
+        margin-bottom: 2px;
+    }
+    .route-info-value {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #a5b4fc;
+    }
 
     @media (max-width: 500px) {
-        .lang-switch { top: 14px; right: 14px; }
+        .lang-switch { top: 12px; right: 12px; }
         .lang-btn { padding: 6px 12px; font-size: 0.72rem; }
+        .top-bar { top: 14px; left: 14px; right: 80px; }
+        .bottom-sheet { padding: 10px 16px 22px; border-radius: 28px 28px 0 0; max-height: 85vh; }
+        .logo { font-size: 2.2rem; }
+        .role-title { font-size: 1.6rem; }
+        .settings-title { font-size: 1.3rem; }
+        .avatar-wrap { width: 96px; height: 96px; }
+        .avatar-circle { width: 96px; height: 96px; }
+        .avatar-badge { width: 30px; height: 30px; }
+        .map-wrapper { height: 200px; }
     }
 
-    @media (max-width: 400px) {
-        .glass { padding: 32px 22px; border-radius: 30px; }
-        .logo { font-size: 2.8rem; }
-        .role-title { font-size: 1.8rem; }
-        .role-grid { gap: 10px; }
-        .role-card { padding: 22px 10px; border-radius: 20px; }
-        .map-wrapper { height: 220px; }
-    }
+    .leaflet-routing-container { display: none !important; }
 </style>
 </head>
 <body>
+
+    <!-- Карта (только для таксиста) -->
+    <div id="bg-map"></div>
+
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+    <div class="blob blob-4"></div>
 
     <div class="lang-switch">
         <button class="lang-btn active" data-lang="ru">RU</button>
@@ -1035,149 +319,249 @@
         <button class="lang-btn" data-lang="kz">KZ</button>
     </div>
 
-    <div class="blob blob-1"></div>
-    <div class="blob blob-2"></div>
-    <div class="blob blob-3"></div>
-    <div class="blob blob-4"></div>
-
-    <div class="glass">
-        <!-- ЭКРАН 1: АВТОРИЗАЦИЯ -->
-        <div class="screen active" id="screen-auth">
-            <div class="logo-wrap">
-                <div class="logo">вТакси</div>
+    <div class="app">
+        <!-- ЭКРАН 1: РЕГИСТРАЦИЯ -->
+        <div class="screen active" id="screen-reg">
+            <div class="top-bar">
+                <div class="brand-pill">
+                    <span class="brand-logo">вТакси</span>
+                    <span class="brand-dot"></span>
+                </div>
             </div>
-            <div class="brand-sub" data-i18n="brandSub">сервис поездок</div>
+            <div style="flex:1; pointer-events:none;"></div>
+            <div class="bottom-sheet">
+                <div class="sheet-handle"></div>
+                <div class="logo-wrap"><div class="logo">вТакси</div></div>
+                <div class="brand-sub" data-i18n="brandSub">сервис поездок</div>
 
-            <div class="field">
-                <label class="field-label" for="mail" data-i18n="labelMail">Mail</label>
-                <input type="email" id="mail" class="field-input" placeholder="name@mail.com" autocomplete="email">
-            </div>
+                <div class="avatar-section">
+                    <div class="avatar-label" data-i18n="photoLabel">Ваше фото</div>
+                    <div class="avatar-wrap">
+                        <div class="avatar-circle" id="avatarCircle">
+                            <div class="avatar-placeholder" id="avatarPlaceholder">
+                                <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+                                <span data-i18n="photoAdd">Добавить</span>
+                            </div>
+                            <img id="avatarImg" style="display:none;" alt="">
+                        </div>
+                        <div class="avatar-badge" id="avatarBadge">
+                            <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                        </div>
+                    </div>
+                </div>
 
-            <div class="field">
-                <label class="field-label" for="nick" data-i18n="labelNick">Никнейм</label>
-                <input type="text" id="nick" class="field-input" placeholder="@nickname" autocomplete="username">
-            </div>
+                <div class="field">
+                    <label class="field-label" for="fullname">
+                        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+                        <span data-i18n="labelFullname">Имя и Фамилия</span>
+                    </label>
+                    <input type="text" id="fullname" class="field-input" placeholder="Ерлан Сейітқали" autocomplete="name">
+                </div>
 
-            <button class="btn" id="btn-auth" data-i18n="btnContinue">Продолжить</button>
+                <div class="field">
+                    <label class="field-label" for="phone">
+                        <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/></svg>
+                        <span data-i18n="labelPhone">Номер телефона</span>
+                    </label>
+                    <input type="tel" id="phone" class="field-input" placeholder="+7 700 000 00 00" autocomplete="tel">
+                </div>
 
-            <div class="divider" data-i18n="dividerOr">или</div>
-            <div class="link">
-                <span id="toggle-mode" data-i18n="toggleLogin">У меня уже есть аккаунт</span>
+                <button class="btn" id="btn-reg" data-i18n="btnContinue">Продолжить</button>
+                <div class="divider" data-i18n="dividerOr">или</div>
+                <div class="link"><span id="toggle-mode" data-i18n="toggleLogin">У меня уже есть аккаунт</span></div>
             </div>
         </div>
 
         <!-- ЭКРАН 2: ВЫБОР РОЛИ -->
         <div class="screen" id="screen-role">
-            <div class="role-title" data-i18n="roleTitle">Кто вы?</div>
-            <div class="role-desc" data-i18n="roleDesc">Выберите свою роль, чтобы продолжить</div>
-
-            <div class="role-grid">
-                <div class="role-card" data-role="driver">
-                    <div class="role-icon">
-                        <svg viewBox="0 0 24 24">
-                            <path d="M5 17h14M5 17a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2M5 17l1.5-5.5A2 2 0 0 1 8.4 10h7.2a2 2 0 0 1 1.9 1.5L19 17"/>
-                            <circle cx="7.5" cy="17" r="1.5"/>
-                            <circle cx="16.5" cy="17" r="1.5"/>
-                            <path d="M8 10V8a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                        </svg>
-                    </div>
-                    <div class="role-name" data-i18n="roleDriver">Таксист</div>
-                    <div class="role-hint" data-i18n="roleDriverHint">Принимать заказы</div>
-                </div>
-
-                <div class="role-card" data-role="passenger">
-                    <div class="role-icon">
-                        <svg viewBox="0 0 24 24">
-                            <circle cx="12" cy="8" r="3.5"/>
-                            <path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/>
-                        </svg>
-                    </div>
-                    <div class="role-name" data-i18n="rolePassenger">Пассажир</div>
-                    <div class="role-hint" data-i18n="rolePassengerHint">Найти машину</div>
-                </div>
+            <div class="top-bar">
+                <div class="brand-pill"><span class="brand-logo">вТакси</span><span class="brand-dot"></span></div>
             </div>
-
-            <button class="btn btn-ghost" id="btn-back" data-i18n="btnBack">Назад</button>
+            <div style="flex:1; pointer-events:none;"></div>
+            <div class="bottom-sheet">
+                <div class="sheet-handle"></div>
+                <div class="role-title" data-i18n="roleTitle">Кто вы?</div>
+                <div class="role-desc" data-i18n="roleDesc">Выберите свою роль, чтобы продолжить</div>
+                <div class="role-grid">
+                    <div class="role-card" data-role="driver">
+                        <div class="role-icon"><svg viewBox="0 0 24 24"><path d="M5 17h14M5 17a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2M5 17l1.5-5.5A2 2 0 0 1 8.4 10h7.2a2 2 0 0 1 1.9 1.5L19 17"/><circle cx="7.5" cy="17" r="1.5"/><circle cx="16.5" cy="17" r="1.5"/><path d="M8 10V8a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div>
+                        <div class="role-name" data-i18n="roleDriver">Таксист</div>
+                        <div class="role-hint" data-i18n="roleDriverHint">Принимать заказы</div>
+                    </div>
+                    <div class="role-card" data-role="passenger">
+                        <div class="role-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg></div>
+                        <div class="role-name" data-i18n="rolePassenger">Пассажир</div>
+                        <div class="role-hint" data-i18n="rolePassengerHint">Найти машину</div>
+                    </div>
+                </div>
+                <button class="btn btn-ghost" id="btn-back-role" data-i18n="btnBack">Назад</button>
+            </div>
         </div>
 
         <!-- ЭКРАН 3: ОСНОВНОЙ -->
         <div class="screen" id="screen-ride">
-            <div class="user-bar">
-                <div class="user-info">
-                    <div class="user-hello" id="role-label" data-i18n="roleLabel">Роль</div>
-                    <div class="user-nick" id="display-nick">@user</div>
-                </div>
-                <button class="logout" id="btn-logout" data-i18n="btnLogout">Выйти</button>
+            <div class="top-bar">
+                <div class="brand-pill"><span class="brand-logo">вТакси</span><span class="brand-dot"></span></div>
             </div>
-
-            <div class="location">
-                <div class="location-pin">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z"/>
-                        <circle cx="12" cy="10" r="2.5"/>
-                    </svg>
+            <div style="flex:1; pointer-events:none;"></div>
+            <div class="bottom-sheet">
+                <div class="sheet-handle"></div>
+                <div class="user-bar">
+                    <div class="user-avatar-mini" id="miniAvatar">
+                        <svg viewBox="0 0 24 24" id="miniAvatarSvg"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+                        <img id="miniAvatarImg" style="display:none;" alt="">
+                    </div>
+                    <div class="user-info">
+                        <div class="user-hello" id="role-label" data-i18n="roleLabel">Роль</div>
+                        <div class="user-nick" id="display-name">—</div>
+                    </div>
+                    <div class="user-actions">
+                        <button class="icon-btn" id="btn-settings" title="Настройки">
+                            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                        </button>
+                    </div>
                 </div>
-                <div class="location-text">
-                    <div class="location-label" data-i18n="locLabel">Ваше местоположение</div>
-                    <div class="location-value" id="display-location" data-i18n="locDetecting">Определяем...</div>
+
+                <!-- Местоположение -->
+                <div class="location">
+                    <div class="location-pin">
+                        <svg viewBox="0 0 24 24"><path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+                    </div>
+                    <div class="location-text">
+                        <div class="location-label" data-i18n="locLabel">Ваше местоположение</div>
+                        <div class="location-value" id="display-location" data-i18n="locDetecting">Определяем...</div>
+                    </div>
                 </div>
-            </div>
 
-            <div class="loc-actions" id="loc-actions" style="display:none;">
-                <button class="loc-btn" id="btn-wrong" data-i18n="locWrong">Неправильно?</button>
-                <button class="loc-btn" id="btn-search-city" data-i18n="locMap">Выбрать на карте</button>
-            </div>
+                <!-- Ручной ввод адреса -->
+                <div class="addr-input-wrap">
+                    <input type="text" id="manual-address" class="field-input" placeholder="Введите ваш адрес (город, улица, дом)" data-i18n-placeholder="manualAddressPlaceholder">
+                </div>
+                <div class="addr-hint" data-i18n="manualAddressHint">Если GPS не точен — введите адрес вручную</div>
 
-            <div id="content-area"></div>
+                <div id="content-area"></div>
+            </div>
+        </div>
+
+        <!-- ЭКРАН 4: НАСТРОЙКИ -->
+        <div class="screen" id="screen-settings">
+            <div class="top-bar">
+                <div class="brand-pill"><span class="brand-logo">вТакси</span><span class="brand-dot"></span></div>
+            </div>
+            <div style="flex:1; pointer-events:none;"></div>
+            <div class="bottom-sheet">
+                <div class="sheet-handle"></div>
+                <div class="settings-header">
+                    <div class="back-btn" id="btn-back-settings"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></div>
+                    <div class="settings-title" data-i18n="settingsTitle">Настройки</div>
+                </div>
+                <div class="settings-profile">
+                    <div class="settings-avatar-wrap">
+                        <div class="settings-avatar" id="settingsAvatar">
+                            <svg viewBox="0 0 24 24" id="settingsAvatarSvg"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+                            <img id="settingsAvatarImg" style="display:none;" alt="">
+                        </div>
+                        <div class="settings-avatar-badge" id="settingsAvatarBadge">
+                            <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                        </div>
+                    </div>
+                    <div class="settings-name" id="settingsName">—</div>
+                    <div class="settings-role" id="settingsRole">—</div>
+                </div>
+
+                <div class="settings-item" data-action="edit-name">
+                    <div class="settings-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg></div>
+                    <div class="settings-text">
+                        <div class="settings-label" data-i18n="settingsName">Имя</div>
+                        <div class="settings-value" id="settingsNameValue">—</div>
+                    </div>
+                    <svg class="settings-chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+                </div>
+                <div class="settings-item" data-action="edit-phone">
+                    <div class="settings-icon"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/></svg></div>
+                    <div class="settings-text">
+                        <div class="settings-label" data-i18n="settingsPhone">Телефон</div>
+                        <div class="settings-value" id="settingsPhoneValue">—</div>
+                    </div>
+                    <svg class="settings-chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+                </div>
+                <div class="settings-item" data-action="edit-mail">
+                    <div class="settings-icon"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></svg></div>
+                    <div class="settings-text">
+                        <div class="settings-label" data-i18n="settingsMail">Почта</div>
+                        <div class="settings-value" id="settingsMailValue">—</div>
+                    </div>
+                    <svg class="settings-chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+                </div>
+                <div class="settings-item" data-action="edit-photo">
+                    <div class="settings-icon"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+                    <div class="settings-text">
+                        <div class="settings-label" data-i18n="settingsPhoto">Фото профиля</div>
+                        <div class="settings-value" data-i18n="settingsPhotoValue">Изменить фото</div>
+                    </div>
+                    <svg class="settings-chevron" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+                </div>
+
+                <button class="btn btn-ghost" id="btn-logout" style="margin-top:18px;" data-i18n="btnLogout">Выйти</button>
+            </div>
         </div>
     </div>
 
-    <!-- МОДАЛКА ЦЕНЫ -->
-    <div class="modal-overlay" id="modal-price">
+    <!-- МОДАЛКА: РЕДАКТИРОВАНИЕ ПОЛЯ -->
+    <div class="modal-overlay" id="modal-edit">
         <div class="modal">
-            <div class="modal-title" data-i18n="priceTitle">Ваш заказ</div>
-            <div class="modal-sub" data-i18n="priceSub">Укажите стоимость поездки</div>
+            <div class="modal-title" id="edit-title">Редактировать</div>
+            <div class="modal-sub" id="edit-sub">Введите новое значение</div>
             <div class="field">
-                <label class="field-label" for="price-input" data-i18n="priceLabel">Цена, ₸</label>
-                <input type="number" id="price-input" class="field-input" placeholder="350" min="50" step="10">
-            </div>
-            <div class="field">
-                <label class="field-label" for="from-input" data-i18n="priceFrom">Откуда</label>
-                <input type="text" id="from-input" class="field-input" placeholder="ул. Абая, 15">
-            </div>
-            <div class="field">
-                <label class="field-label" for="to-input" data-i18n="priceTo">Куда</label>
-                <input type="text" id="to-input" class="field-input" placeholder="ТРЦ «Мега»">
+                <label class="field-label" id="edit-label">Значение</label>
+                <input type="text" id="edit-input" class="field-input">
             </div>
             <div style="display:flex; gap:10px; margin-top:18px;">
-                <button class="btn btn-ghost" id="btn-price-cancel" style="margin-top:0;" data-i18n="btnCancel">Отмена</button>
-                <button class="btn" id="btn-price-submit" style="margin-top:0;" data-i18n="btnCreateOrder">Создать заказ</button>
+                <button class="btn btn-ghost" id="btn-edit-cancel" style="margin-top:0;" data-i18n="btnCancel">Отмена</button>
+                <button class="btn" id="btn-edit-save" style="margin-top:0;" data-i18n="btnSave">Сохранить</button>
             </div>
         </div>
     </div>
 
-    <!-- МОДАЛКА КАРТЫ -->
+    <!-- МОДАЛКА: ФОТО -->
+    <div class="modal-overlay" id="modal-photo">
+        <div class="modal">
+            <div class="modal-title" data-i18n="photoTitle">Фото профиля</div>
+            <div class="modal-sub" data-i18n="photoSub">Сделайте селфи или выберите из галереи</div>
+            <div style="display:flex; flex-direction:column; gap:10px; margin-top:8px;">
+                <button class="btn btn-ghost" id="btn-camera" style="justify-content:flex-start; display:flex; align-items:center; gap:12px; margin-top:0;">
+                    <svg viewBox="0 0 24 24" style="width:22px;height:22px;stroke:#c7d2fe;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    <span data-i18n="photoCamera">Сфотографировать себя</span>
+                </button>
+                <button class="btn btn-ghost" id="btn-gallery" style="justify-content:flex-start; display:flex; align-items:center; gap:12px; margin-top:0;">
+                    <svg viewBox="0 0 24 24" style="width:22px;height:22px;stroke:#c7d2fe;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                    <span data-i18n="photoGallery">Выбрать из галереи</span>
+                </button>
+            </div>
+            <button class="btn btn-ghost" id="btn-photo-cancel" style="margin-top:16px;" data-i18n="btnCancel">Отмена</button>
+        </div>
+    </div>
+
+    <!-- МОДАЛКА: СОЗДАНИЕ ЗАКАЗА (пассажир) -->
+    <div class="modal-overlay" id="modal-price">
+        <div class="modal" id="price-modal-content"></div>
+    </div>
+
+    <!-- МОДАЛКА: КАРТА (только для таксиста, выбор точки) -->
     <div class="modal-overlay" id="modal-map">
-        <div class="modal" style="max-width: 480px;">
+        <div class="modal" style="max-width: 460px;">
             <div class="modal-title" data-i18n="mapTitle">Выбор местоположения</div>
             <div class="modal-sub" data-i18n="mapSub">Кликните по карте или введите адрес</div>
-
-            <div class="map-search-wrap">
-                <svg class="map-search-icon" viewBox="0 0 24 24">
-                    <circle cx="11" cy="11" r="7"/>
-                    <path d="M21 21l-4.35-4.35"/>
-                </svg>
-                <input type="text" class="map-search-input" id="map-search" placeholder="Введите адрес, город, улицу..." data-i18n-placeholder="mapSearchPlaceholder">
-                <div class="map-suggestions" id="map-suggestions"></div>
+            <div class="map-search-wrap" style="position:relative; margin-bottom:12px;">
+                <svg class="map-search-icon" viewBox="0 0 24 24" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;stroke:rgba(165,180,252,0.7);stroke-width:2;fill:none;pointer-events:none;"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+                <input type="text" class="map-search-input" id="map-search" placeholder="Введите адрес..." data-i18n-placeholder="mapSearchPlaceholder" style="width:100%;padding:14px 16px 14px 42px;border-radius:14px;background:rgba(0,0,0,0.4);border:1px solid rgba(165,180,252,0.3);color:#fff;font-size:0.88rem;font-weight:500;outline:none;font-family:'Manrope',sans-serif;">
+                <div class="map-suggestions" id="map-suggestions" style="position:absolute;top:100%;left:0;right:0;margin-top:6px;background:rgba(15,20,35,0.97);backdrop-filter:blur(20px);border:1px solid rgba(165,180,252,0.25);border-radius:14px;max-height:200px;overflow-y:auto;z-index:700;display:none;"></div>
             </div>
-
             <div class="map-wrapper">
                 <div id="map"></div>
                 <div class="map-hint" id="map-hint" data-i18n="mapHint">Нажмите на карту, чтобы выбрать точку</div>
             </div>
-
             <div id="chosen-location-wrap"></div>
-
             <div style="display:flex; gap:10px; margin-top:6px;">
                 <button class="btn btn-ghost" id="btn-map-cancel" style="margin-top:0;" data-i18n="btnCancel">Отмена</button>
                 <button class="btn" id="btn-map-confirm" style="margin-top:0;" data-i18n="btnConfirm">Подтвердить</button>
@@ -1185,147 +569,106 @@
         </div>
     </div>
 
+    <input type="file" id="file-camera" accept="image/*" capture="user" style="display:none;">
+    <input type="file" id="file-gallery" accept="image/*" style="display:none;">
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
 <script type="module">
 // ============================================================
 // ПЕРЕВОДЫ
 // ============================================================
 const I18N = {
     ru: {
-        brandSub: 'сервис поездок',
-        labelMail: 'Mail',
-        labelNick: 'Никнейм',
-        btnContinue: 'Продолжить',
-        dividerOr: 'или',
-        toggleLogin: 'У меня уже есть аккаунт',
-        toggleRegister: 'Создать новый аккаунт',
-        roleTitle: 'Кто вы?',
-        roleDesc: 'Выберите свою роль, чтобы продолжить',
-        roleDriver: 'Таксист',
-        roleDriverHint: 'Принимать заказы',
-        rolePassenger: 'Пассажир',
-        rolePassengerHint: 'Найти машину',
-        btnBack: 'Назад',
-        roleLabel: 'Роль',
-        btnLogout: 'Выйти',
-        locLabel: 'Ваше местоположение',
-        locDetecting: 'Определяем...',
-        locWrong: 'Неправильно?',
-        locMap: 'Выбрать на карте',
-        priceTitle: 'Ваш заказ',
-        priceSub: 'Укажите стоимость поездки',
-        priceLabel: 'Цена, ₸',
-        priceFrom: 'Откуда',
-        priceTo: 'Куда',
-        btnCancel: 'Отмена',
-        btnCreateOrder: 'Создать заказ',
-        btnConfirm: 'Подтвердить',
-        mapTitle: 'Выбор местоположения',
-        mapSub: 'Кликните по карте или введите адрес',
-        mapSearchPlaceholder: 'Введите адрес, город, улицу...',
-        mapHint: 'Нажмите на карту, чтобы выбрать точку',
-        roleDriverLabel: 'Таксист',
-        rolePassengerLabel: 'Пассажир',
+        brandSub: 'сервис поездок', photoLabel: 'Ваше фото', photoAdd: 'Добавить',
+        labelFullname: 'Имя и Фамилия', labelPhone: 'Номер телефона',
+        btnContinue: 'Продолжить', dividerOr: 'или', toggleLogin: 'У меня уже есть аккаунт',
+        toggleRegister: 'Создать новый аккаунт', roleTitle: 'Кто вы?', roleDesc: 'Выберите свою роль, чтобы продолжить',
+        roleDriver: 'Таксист', roleDriverHint: 'Принимать заказы', rolePassenger: 'Пассажир', rolePassengerHint: 'Найти машину',
+        btnBack: 'Назад', roleLabel: 'Роль', btnLogout: 'Выйти',
+        locLabel: 'Ваше местоположение', locDetecting: 'Определяем...',
+        manualAddressPlaceholder: 'Введите ваш адрес (город, улица, дом)',
+        manualAddressHint: 'Если GPS не точен — введите адрес вручную',
+        manualAddressSaved: 'Адрес сохранён',
+        priceTitle: 'Ваш заказ', priceSub: 'Укажите стоимость и адреса поездки',
+        priceLabel: 'Цена, ₸', priceFrom: 'Откуда', priceTo: 'Куда',
+        btnCancel: 'Отмена', btnSave: 'Сохранить', btnCreateOrder: 'Создать заказ', btnConfirm: 'Подтвердить',
+        mapTitle: 'Выбор местоположения', mapSub: 'Кликните по карте или введите адрес',
+        mapSearchPlaceholder: 'Введите адрес, город, улицу...', mapHint: 'Нажмите на карту, чтобы выбрать точку',
+        roleDriverLabel: 'Таксист', rolePassengerLabel: 'Пассажир',
         confirmCar: 'У вас есть автомобиль? Нажмите ОК — да, Отмена — нет.',
-        noLocation: 'Сначала определите местоположение',
-        searchLabel: 'Ожидание заказов рядом',
-        searchWait: 'Ищем пассажиров поблизости...',
-        searchEmpty: 'Пока нет заказов. Ожидаем...',
-        driverAccepted: 'Вы приняли заказ',
-        passenger: 'Пассажир',
-        place: 'Место',
-        btnFinish: 'Завершить',
-        btnDecline: 'Отказаться',
-        btnAccept: 'Принять',
-        orderFrom: 'Заказ от',
-        readyTrip: 'Готовы к поездке?',
-        btnOrderTaxi: 'Заказать такси',
-        btnMyOrders: 'Мои заказы',
-        myOrders: 'Мои активные заказы',
-        noOrders: 'У вас нет активных заказов',
-        loading: 'Загрузка...',
-        yourOrder: 'Ваш заказ',
-        searchDriver: 'Поиск водителя',
-        waitingDriver: 'Ждём водителя рядом...',
-        driverOnWay: 'Водитель едет к вам',
-        driverAcceptedOrder: 'Водитель уже принял заказ и едет',
-        btnCancelOrder: 'Отменить заказ',
-        driverName: 'Водитель',
-        statusWaiting: 'Поиск водителя',
-        statusAccepted: 'Водитель принял',
-        chosen: 'Выбрано',
-        current: 'Текущее',
-        locateAddress: 'Определяем адрес...',
-        locationUnknown: 'Неизвестное место',
-        selectPoint: 'Сначала выберите точку на карте'
+        noLocation: 'Сначала введите ваш адрес',
+        searchLabel: 'Ожидание заказов рядом', searchWait: 'Ищем пассажиров поблизости...', searchEmpty: 'Пока нет заказов. Ожидаем...',
+        driverAccepted: 'Вы приняли заказ', passenger: 'Пассажир', place: 'Место',
+        btnFinish: 'Завершить', btnDecline: 'Отказаться', btnAccept: 'Принять',
+        orderFrom: 'Заказ от', readyTrip: 'Готовы к поездке?',
+        btnOrderTaxi: 'Заказать такси', btnMyOrders: 'Мои заказы',
+        myOrders: 'Мои активные заказы', noOrders: 'У вас нет активных заказов',
+        loading: 'Загрузка...', yourOrder: 'Ваш заказ', searchDriver: 'Поиск водителя',
+        waitingDriver: 'Ждём водителя рядом...', driverOnWay: 'Водитель едет к вам',
+        driverAcceptedOrder: 'Водитель уже принял заказ и едет', btnCancelOrder: 'Отменить заказ',
+        driverName: 'Водитель', statusWaiting: 'Поиск водителя', statusAccepted: 'Водитель принял',
+        chosen: 'Выбрано', current: 'Текущее', locateAddress: 'Определяем адрес...',
+        locationUnknown: 'Неизвестное место', selectPoint: 'Сначала выберите точку на карте',
+        settingsTitle: 'Настройки', settingsName: 'Имя', settingsPhone: 'Телефон', settingsMail: 'Почта',
+        settingsPhoto: 'Фото профиля', settingsPhotoValue: 'Изменить фото',
+        photoTitle: 'Фото профиля', photoSub: 'Сделайте селфи или выберите из галереи',
+        photoCamera: 'Сфотографировать себя', photoGallery: 'Выбрать из галереи',
+        editNameTitle: 'Имя и Фамилия', editNameSub: 'Введите ваше имя и фамилию',
+        editPhoneTitle: 'Номер телефона', editPhoneSub: 'Введите номер в формате +7 700 000 00 00',
+        editMailTitle: 'Электронная почта', editMailSub: 'Введите вашу почту',
+        editNameLabel: 'Имя', editPhoneLabel: 'Телефон', editMailLabel: 'Почта',
+        manualAddress: 'Ввести этот адрес вручную',
+        // Навигатор
+        navTitle: 'Навигатор', navToPassenger: 'Маршрут к пассажиру',
+        navToDestination: 'Маршрут к месту назначения', navStart: 'Начать навигацию',
+        navStop: 'Остановить', navDistance: 'Расстояние', navTime: 'Время',
+        navNoRoute: 'Не удалось построить маршрут'
     },
     kz: {
-        brandSub: 'сапар қызметі',
-        labelMail: 'Mail',
-        labelNick: 'Лақап аты',
-        btnContinue: 'Жалғастыру',
-        dividerOr: 'немесе',
-        toggleLogin: 'Менде аккаунт бар',
-        toggleRegister: 'Жаңа аккаунт жасау',
-        roleTitle: 'Сіз кімсіз?',
-        roleDesc: 'Жалғастыру үшін рөліңізді таңдаңыз',
-        roleDriver: 'Таксист',
-        roleDriverHint: 'Тапсырыстарды қабылдау',
-        rolePassenger: 'Жолаушы',
-        rolePassengerHint: 'Көлік табу',
-        btnBack: 'Артқа',
-        roleLabel: 'Рөл',
-        btnLogout: 'Шығу',
-        locLabel: 'Сіздің орналасқан жеріңіз',
-        locDetecting: 'Анықталуда...',
-        locWrong: 'Дұрыс емес пе?',
-        locMap: 'Картадан таңдау',
-        priceTitle: 'Сіздің тапсырысыңыз',
-        priceSub: 'Сапар құнын көрсетіңіз',
-        priceLabel: 'Бағасы, ₸',
-        priceFrom: 'Қайдан',
-        priceTo: 'Қайда',
-        btnCancel: 'Болдырмау',
-        btnCreateOrder: 'Тапсырыс жасау',
-        btnConfirm: 'Растау',
-        mapTitle: 'Орынды таңдау',
-        mapSub: 'Картаға басыңыз немесе мекенжайды енгізіңіз',
-        mapSearchPlaceholder: 'Мекенжай, қала, көше...',
-        mapHint: 'Нүктені таңдау үшін картаға басыңыз',
-        roleDriverLabel: 'Таксист',
-        rolePassengerLabel: 'Жолаушы',
+        brandSub: 'сапар қызметі', photoLabel: 'Сіздің суретіңіз', photoAdd: 'Қосу',
+        labelFullname: 'Аты-жөні', labelPhone: 'Телефон нөмірі',
+        btnContinue: 'Жалғастыру', dividerOr: 'немесе', toggleLogin: 'Менде аккаунт бар',
+        toggleRegister: 'Жаңа аккаунт жасау', roleTitle: 'Сіз кімсіз?', roleDesc: 'Жалғастыру үшін рөліңізді таңдаңыз',
+        roleDriver: 'Таксист', roleDriverHint: 'Тапсырыстарды қабылдау', rolePassenger: 'Жолаушы', rolePassengerHint: 'Көлік табу',
+        btnBack: 'Артқа', roleLabel: 'Рөл', btnLogout: 'Шығу',
+        locLabel: 'Сіздің орналасқан жеріңіз', locDetecting: 'Анықталуда...',
+        manualAddressPlaceholder: 'Мекенжайыңызды енгізіңіз (қала, көше, үй)',
+        manualAddressHint: 'GPS дәл болмаса — мекенжайды қолмен енгізіңіз',
+        manualAddressSaved: 'Мекенжай сақталды',
+        priceTitle: 'Сіздің тапсырысыңыз', priceSub: 'Құны мен мекенжайларды көрсетіңіз',
+        priceLabel: 'Бағасы, ₸', priceFrom: 'Қайдан', priceTo: 'Қайда',
+        btnCancel: 'Болдырмау', btnSave: 'Сақтау', btnCreateOrder: 'Тапсырыс жасау', btnConfirm: 'Растау',
+        mapTitle: 'Орынды таңдау', mapSub: 'Картаға басыңыз немесе мекенжайды енгізіңіз',
+        mapSearchPlaceholder: 'Мекенжай, қала, көше...', mapHint: 'Нүктені таңдау үшін картаға басыңыз',
+        roleDriverLabel: 'Таксист', rolePassengerLabel: 'Жолаушы',
         confirmCar: 'Сізде көлік бар ма? Иә — ОК, Жоқ — Болдырмау.',
-        noLocation: 'Алдымен орналасқан жеріңізді анықтаңыз',
-        searchLabel: 'Жақын жердегі тапсырыстарды күту',
-        searchWait: 'Жақын жердегі жолаушыларды іздеу...',
-        searchEmpty: 'Әзірге тапсырыс жоқ. Күтеміз...',
-        driverAccepted: 'Сіз тапсырысты қабылдадыңыз',
-        passenger: 'Жолаушы',
-        place: 'Орын',
-        btnFinish: 'Аяқтау',
-        btnDecline: 'Бас тарту',
-        btnAccept: 'Қабылдау',
-        orderFrom: 'Тапсырыс',
-        readyTrip: 'Сапарға дайынсыз ба?',
-        btnOrderTaxi: 'Такси шақыру',
-        btnMyOrders: 'Менің тапсырыстарым',
-        myOrders: 'Менің белсенді тапсырыстарым',
-        noOrders: 'Сізде белсенді тапсырыс жоқ',
-        loading: 'Жүктелуде...',
-        yourOrder: 'Сіздің тапсырысыңыз',
-        searchDriver: 'Жүргізушіні іздеу',
-        waitingDriver: 'Жақын жердегі жүргізушіні күтеміз...',
-        driverOnWay: 'Жүргізуші сізге келе жатыр',
-        driverAcceptedOrder: 'Жүргізуші тапсырысты қабылдады',
-        btnCancelOrder: 'Тапсырыстан бас тарту',
-        driverName: 'Жүргізуші',
-        statusWaiting: 'Жүргізушіні іздеу',
-        statusAccepted: 'Жүргізуші қабылдады',
-        chosen: 'Таңдалды',
-        current: 'Ағымдағы',
-        locateAddress: 'Мекенжай анықталуда...',
-        locationUnknown: 'Белгісіз орын',
-        selectPoint: 'Алдымен картадан нүктені таңдаңыз'
+        noLocation: 'Алдымен мекенжайыңызды енгізіңіз',
+        searchLabel: 'Жақын жердегі тапсырыстарды күту', searchWait: 'Жақын жердегі жолаушыларды іздеу...', searchEmpty: 'Әзірге тапсырыс жоқ. Күтеміз...',
+        driverAccepted: 'Сіз тапсырысты қабылдадыңыз', passenger: 'Жолаушы', place: 'Орын',
+        btnFinish: 'Аяқтау', btnDecline: 'Бас тарту', btnAccept: 'Қабылдау',
+        orderFrom: 'Тапсырыс', readyTrip: 'Сапарға дайынсыз ба?',
+        btnOrderTaxi: 'Такси шақыру', btnMyOrders: 'Менің тапсырыстарым',
+        myOrders: 'Менің белсенді тапсырыстарым', noOrders: 'Сізде белсенді тапсырыс жоқ',
+        loading: 'Жүктелуде...', yourOrder: 'Сіздің тапсырысыңыз', searchDriver: 'Жүргізушіні іздеу',
+        waitingDriver: 'Жақын жердегі жүргізушіні күтеміз...', driverOnWay: 'Жүргізуші сізге келе жатыр',
+        driverAcceptedOrder: 'Жүргізуші тапсырысты қабылдады', btnCancelOrder: 'Тапсырыстан бас тарту',
+        driverName: 'Жүргізуші', statusWaiting: 'Жүргізушіні іздеу', statusAccepted: 'Жүргізуші қабылдады',
+        chosen: 'Таңдалды', current: 'Ағымдағы', locateAddress: 'Мекенжай анықталуда...',
+        locationUnknown: 'Белгісіз орын', selectPoint: 'Алдымен картадан нүктені таңдаңыз',
+        settingsTitle: 'Параметрлер', settingsName: 'Аты', settingsPhone: 'Телефон', settingsMail: 'Пошта',
+        settingsPhoto: 'Профиль суреті', settingsPhotoValue: 'Суретті өзгерту',
+        photoTitle: 'Профиль суреті', photoSub: 'Селфи жасаңыз немесе галереядан таңдаңыз',
+        photoCamera: 'Өзіңізді суретке түсіру', photoGallery: 'Галереядан таңдау',
+        editNameTitle: 'Аты-жөні', editNameSub: 'Аты-жөніңізді енгізіңіз',
+        editPhoneTitle: 'Телефон нөмірі', editPhoneSub: 'Нөмірді +7 700 000 00 00 форматында енгізіңіз',
+        editMailTitle: 'Электрондық пошта', editMailSub: 'Поштаңызды енгізіңіз',
+        editNameLabel: 'Аты', editPhoneLabel: 'Телефон', editMailLabel: 'Пошта',
+        manualAddress: 'Осы мекенжайды қолмен енгізу',
+        navTitle: 'Навигатор', navToPassenger: 'Жолаушыға маршрут',
+        navToDestination: 'Межелі орынға маршрут', navStart: 'Навигацияны бастау',
+        navStop: 'Тоқтату', navDistance: 'Қашықтық', navTime: 'Уақыт',
+        navNoRoute: 'Маршрут құру мүмкін болмады'
     }
 };
 
@@ -1344,10 +687,9 @@ function applyLang(lang) {
     });
     if (state.role) {
         roleLabel.textContent = state.role === 'driver' ? t('roleDriverLabel') : t('rolePassengerLabel');
+        settingsRole.textContent = state.role === 'driver' ? t('roleDriverLabel') : t('rolePassengerLabel');
     }
-    if (!state.location && displayLoc.textContent !== t('locDetecting')) {
-        displayLoc.textContent = t('locDetecting');
-    }
+    if (state.role) renderCurrentRole();
 }
 
 document.querySelectorAll('.lang-btn').forEach(btn => {
@@ -1362,9 +704,7 @@ document.querySelectorAll('.lang-btn').forEach(btn => {
 // FIREBASE
 // ============================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import {
-    getDatabase, ref, push, set, onValue, remove, update, off
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, push, set, onValue, remove, update, off } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyDkAlQ295XNbobRWMSnxIweTOrT1i3z_iA",
@@ -1384,39 +724,71 @@ const db = getDatabase(app);
 // СОСТОЯНИЕ
 // ============================================================
 const state = {
-    mail: '', nick: '', role: null, hasCar: null,
+    fullname: '', phone: '', mail: '', photo: '',
+    role: null, hasCar: null,
     location: '', lat: null, lng: null, isLogin: false,
     activeOrderId: null, activePassengerOrderId: null,
-    ordersListener: null, driverOrdersListener: null
+    ordersListener: null, driverOrdersListener: null,
+    manualAddress: ''
 };
 
 // ============================================================
 // DOM
 // ============================================================
 const $ = id => document.getElementById(id);
+const screens = { reg: $('screen-reg'), role: $('screen-role'), ride: $('screen-ride'), settings: $('screen-settings') };
 
-const screens = { auth: $('screen-auth'), role: $('screen-role'), ride: $('screen-ride') };
-
-const mailInput   = $('mail');
-const nickInput   = $('nick');
-const btnAuth     = $('btn-auth');
-const toggleMode  = $('toggle-mode');
-const btnBack     = $('btn-back');
-const btnLogout   = $('btn-logout');
-const roleCards   = document.querySelectorAll('.role-card');
-const displayNick = $('display-nick');
-const displayLoc  = $('display-location');
-const roleLabel   = $('role-label');
+const fullnameInput = $('fullname');
+const phoneInput = $('phone');
+const btnReg = $('btn-reg');
+const toggleMode = $('toggle-mode');
+const btnBackRole = $('btn-back-role');
+const roleCards = document.querySelectorAll('.role-card');
+const displayName = $('display-name');
+const displayLoc = $('display-location');
+const roleLabel = $('role-label');
 const contentArea = $('content-area');
-const locActions  = $('loc-actions');
-const btnWrong    = $('btn-wrong');
-const btnSearchCity = $('btn-search-city');
+const manualAddressInput = $('manual-address');
 
-const modalPrice  = $('modal-price');
-const modalMap    = $('modal-map');
-const mapSearch   = $('map-search');
+const avatarCircle = $('avatarCircle');
+const avatarPlaceholder = $('avatarPlaceholder');
+const avatarImg = $('avatarImg');
+const avatarBadge = $('avatarBadge');
+const miniAvatarImg = $('miniAvatarImg');
+const miniAvatarSvg = $('miniAvatarSvg');
+const settingsAvatarImg = $('settingsAvatarImg');
+const settingsAvatarSvg = $('settingsAvatarSvg');
+const settingsAvatarBadge = $('settingsAvatarBadge');
+
+const btnSettings = $('btn-settings');
+const btnBackSettings = $('btn-back-settings');
+const settingsName = $('settingsName');
+const settingsRole = $('settingsRole');
+const settingsNameValue = $('settingsNameValue');
+const settingsPhoneValue = $('settingsPhoneValue');
+const settingsMailValue = $('settingsMailValue');
+const btnLogout = $('btn-logout');
+
+const modalEdit = $('modal-edit');
+const editTitle = $('edit-title');
+const editSub = $('edit-sub');
+const editLabel = $('edit-label');
+const editInput = $('edit-input');
+const btnEditCancel = $('btn-edit-cancel');
+const btnEditSave = $('btn-edit-save');
+
+const modalPhoto = $('modal-photo');
+const btnCamera = $('btn-camera');
+const btnGallery = $('btn-gallery');
+const btnPhotoCancel = $('btn-photo-cancel');
+const fileCamera = $('file-camera');
+const fileGallery = $('file-gallery');
+
+const modalPrice = $('modal-price');
+const modalMap = $('modal-map');
+const mapSearch = $('map-search');
 const mapSuggestions = $('map-suggestions');
-const mapHint     = $('map-hint');
+const mapHint = $('map-hint');
 const chosenLocWrap = $('chosen-location-wrap');
 const btnMapCancel = $('btn-map-cancel');
 const btnMapConfirm = $('btn-map-confirm');
@@ -1424,16 +796,73 @@ const btnMapConfirm = $('btn-map-confirm');
 // ============================================================
 // УТИЛИТЫ
 // ============================================================
-function showScreen(name) {
-    Object.keys(screens).forEach(k => screens[k].classList.toggle('active', k === name));
-}
+function showScreen(name) { Object.keys(screens).forEach(k => screens[k].classList.toggle('active', k === name)); }
 function sanitizeKey(str) { return String(str).replace(/[.#$\[\]\/@]/g, '_'); }
-function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function formatPhone(value) {
+    const digits = value.replace(/\D/g, '').slice(0, 11);
+    if (digits.length === 0) return '';
+    let result = '+7';
+    if (digits.length > 1) result += ' ' + digits.slice(1, 4);
+    if (digits.length > 4) result += ' ' + digits.slice(4, 7);
+    if (digits.length > 7) result += ' ' + digits.slice(7, 9);
+    if (digits.length > 9) result += ' ' + digits.slice(9, 11);
+    return result;
+}
+phoneInput.addEventListener('input', (e) => { e.target.value = formatPhone(e.target.value); });
+
+function updateAllAvatars() {
+    if (state.photo) {
+        avatarImg.src = state.photo; avatarImg.style.display = 'block'; avatarPlaceholder.style.display = 'none';
+        miniAvatarImg.src = state.photo; miniAvatarImg.style.display = 'block'; miniAvatarSvg.style.display = 'none';
+        settingsAvatarImg.src = state.photo; settingsAvatarImg.style.display = 'block'; settingsAvatarSvg.style.display = 'none';
+    } else {
+        avatarImg.style.display = 'none'; avatarPlaceholder.style.display = 'flex';
+        miniAvatarImg.style.display = 'none'; miniAvatarSvg.style.display = 'block';
+        settingsAvatarImg.style.display = 'none'; settingsAvatarSvg.style.display = 'block';
+    }
 }
 
 // ============================================================
-// ГЕОЛОКАЦИЯ С УМНОЙ ПРОВЕРКОЙ
+// ФОТО
+// ============================================================
+function openPhotoModal() { modalPhoto.classList.add('active'); }
+avatarCircle.addEventListener('click', openPhotoModal);
+avatarBadge.addEventListener('click', (e) => { e.stopPropagation(); openPhotoModal(); });
+settingsAvatarBadge.addEventListener('click', openPhotoModal);
+
+btnCamera.addEventListener('click', () => { modalPhoto.classList.remove('active'); fileCamera.click(); });
+btnGallery.addEventListener('click', () => { modalPhoto.classList.remove('active'); fileGallery.click(); });
+btnPhotoCancel.addEventListener('click', () => modalPhoto.classList.remove('active'));
+
+function handlePhotoFile(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX = 400;
+            let w = img.width, h = img.height;
+            if (w > h) { if (w > MAX) { h = h * MAX / w; w = MAX; } }
+            else { if (h > MAX) { w = w * MAX / h; h = MAX; } }
+            canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            state.photo = canvas.toDataURL('image/jpeg', 0.85);
+            updateAllAvatars();
+            saveProfileToFirebase();
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+fileCamera.addEventListener('change', (e) => handlePhotoFile(e.target.files[0]));
+fileGallery.addEventListener('change', (e) => handlePhotoFile(e.target.files[0]));
+
+// ============================================================
+// ГЕОКОДИНГ
 // ============================================================
 function reverseGeocode(lat, lng) {
     const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&accept-language=${currentLang === 'kz' ? 'kk' : 'ru'}&addressdetails=1`;
@@ -1456,8 +885,7 @@ function reverseGeocode(lat, lng) {
             }
             if (data && data.display_name) return data.display_name;
             return null;
-        })
-        .catch(() => null);
+        }).catch(() => null);
 }
 
 function forwardGeocode(query) {
@@ -1465,7 +893,6 @@ function forwardGeocode(query) {
     return fetch(url, { headers: { 'Accept': 'application/json' } }).then(r => r.json()).catch(() => []);
 }
 
-// Запрос геопозиции с конкретными параметрами
 function getCurrentPositionOnce(options) {
     return new Promise((resolve, reject) => {
         if (!navigator.geolocation) { reject(new Error('no geo')); return; }
@@ -1473,183 +900,182 @@ function getCurrentPositionOnce(options) {
     });
 }
 
-// Основной запрос с "высокой точностью"
-function requestGeolocation() {
-    return getCurrentPositionOnce({ enableHighAccuracy: true, timeout: 8000, maximumAge: 0 });
-}
-
-// Повторный запрос — менее строгий, использует кэш
-function requestGeolocationFallback() {
-    return getCurrentPositionOnce({ enableHighAccuracy: false, timeout: 6000, maximumAge: 30000 });
-}
-
-// Небольшое "дрожание" координат: 10-20 см = ~0.000001-0.000002 градуса
-function jitterCoords(lat, lng) {
-    // 1 градус широты ≈ 111 км, значит 0.00001° ≈ 1.11 м
-    // 10 см ≈ 0.0000009°, 20 см ≈ 0.0000018°
-    const latJitter = (Math.random() - 0.5) * 0.0000036; // ±20 см по широте
-    const lngJitter = (Math.random() - 0.5) * 0.0000036; // ±20 см по долготе
-    return { lat: lat + latJitter, lng: lng + lngJitter };
-}
-
-// Проверка: адрес выглядит как полноценный или как "заглушка"?
-function isAddressReliable(addr) {
-    if (!addr) return false;
-    const lower = addr.toLowerCase().trim();
-    if (!lower) return false;
-    // Отбрасываем явно плохие результаты
-    const badPatterns = ['неизвестное место', 'белгісіз орын', 'unknown', 'null', 'undefined'];
-    for (const p of badPatterns) {
-        if (lower.includes(p)) return false;
-    }
-    // Хороший адрес обычно содержит запятую или хотя бы 2 слова
-    const wordCount = lower.split(/\s+/).filter(Boolean).length;
-    if (wordCount >= 2 || lower.includes(',')) return true;
-    return false;
-}
-
-// Умное определение местоположения с повторными проверками
-async function detectLocation() {
-    displayLoc.textContent = t('locDetecting');
-    locActions.style.display = 'none';
-
-    const startTime = Date.now();
-    const MAX_WAIT = 3000; // 3 секунды максимум
-
-    let bestResult = null;
-
-    // Попытка 1: высокая точность
-    try {
-        const pos = await requestGeolocation();
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        const addr = await reverseGeocode(lat, lng);
-
-        if (isAddressReliable(addr)) {
-            state.lat = lat;
-            state.lng = lng;
-            state.location = addr;
-            displayLoc.textContent = addr;
-            locActions.style.display = 'flex';
-            return;
+// ============================================================
+// РУЧНОЙ ВВОД АДРЕСА
+// ============================================================
+let manualAddressTimeout = null;
+manualAddressInput.addEventListener('input', () => {
+    clearTimeout(manualAddressTimeout);
+    const q = manualAddressInput.value.trim();
+    if (q.length < 3) return;
+    manualAddressTimeout = setTimeout(async () => {
+        // Геокодируем введённый адрес, чтобы получить координаты
+        const results = await forwardGeocode(q);
+        if (results && results.length > 0) {
+            const r = results[0];
+            const lat = parseFloat(r.lat), lng = parseFloat(r.lon);
+            state.manualAddress = q;
+            state.lat = lat; state.lng = lng;
+            state.location = r.display_name;
+            displayLoc.textContent = r.display_name;
+        } else {
+            // Если Nominatim не нашёл — просто сохраняем текст
+            state.manualAddress = q;
+            state.location = q;
+            displayLoc.textContent = q;
         }
-        bestResult = { lat, lng, addr };
-    } catch (err) {
-        // Продолжаем — попробуем fallback
+    }, 700);
+});
+
+// При потере фокуса — фиксируем адрес
+manualAddressInput.addEventListener('blur', () => {
+    const q = manualAddressInput.value.trim();
+    if (q.length >= 3) {
+        state.manualAddress = q;
+        state.location = q;
+        displayLoc.textContent = q;
+        if (state.role === 'driver') publishDriver('driver').catch(() => {});
     }
+});
 
-    // Проверяем, сколько времени осталось до 3 секунд
-    const elapsed = Date.now() - startTime;
-    const remaining = MAX_WAIT - elapsed;
+// ============================================================
+// КАРТА — ФОН (ТОЛЬКО ДЛЯ ТАКСИСТА)
+// ============================================================
+let bgMap = null;
+let bgMarker = null;
+let routingControl = null;
+let routeInfo = null;
 
-    // Попытка 2: если ещё есть время — менее строгий запрос с кэшем
-    if (remaining > 500) {
-        try {
-            const pos = await requestGeolocationFallback();
-            const lat = pos.coords.latitude;
-            const lng = pos.coords.longitude;
-            const addr = await reverseGeocode(lat, lng);
+function initBgMap() {
+    if (bgMap) return;
+    bgMap = L.map('bg-map', { zoomControl: true, attributionControl: true })
+        .setView([43.238949, 76.889709], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19, attribution: '&copy; OpenStreetMap'
+    }).addTo(bgMap);
+}
 
-            if (isAddressReliable(addr)) {
-                state.lat = lat;
-                state.lng = lng;
-                state.location = addr;
-                displayLoc.textContent = addr;
-                locActions.style.display = 'flex';
-                return;
-            }
-            if (!bestResult) bestResult = { lat, lng, addr };
-        } catch (err) {
-            // Продолжаем
-        }
+function showBgMap(show) {
+    const el = $('bg-map');
+    if (show) {
+        el.classList.add('visible');
+        if (!bgMap) initBgMap();
+        setTimeout(() => { if (bgMap) bgMap.invalidateSize(); }, 100);
+    } else {
+        el.classList.remove('visible');
     }
+}
 
-    // Попытка 3: если ещё есть время — ещё одна попытка с высокой точностью
-    const elapsed2 = Date.now() - startTime;
-    const remaining2 = MAX_WAIT - elapsed2;
-
-    if (remaining2 > 500) {
-        try {
-            await new Promise(r => setTimeout(r, Math.min(remaining2 - 300, 800)));
-            const pos = await getCurrentPositionOnce({ enableHighAccuracy: true, timeout: 1500, maximumAge: 5000 });
-            const lat = pos.coords.latitude;
-            const lng = pos.coords.longitude;
-            const addr = await reverseGeocode(lat, lng);
-
-            if (isAddressReliable(addr)) {
-                state.lat = lat;
-                state.lng = lng;
-                state.location = addr;
-                displayLoc.textContent = addr;
-                locActions.style.display = 'flex';
-                return;
-            }
-            if (!bestResult) bestResult = { lat, lng, addr };
-        } catch (err) {
-            // Продолжаем
-        }
+function updateBgMarker() {
+    if (!bgMap || !state.lat || !state.lng) return;
+    if (!bgMarker) {
+        bgMarker = L.circleMarker([state.lat, state.lng], {
+            radius: 8, color: '#4f46e5', fillColor: '#7c3aed', fillOpacity: 0.6, weight: 3
+        }).addTo(bgMap);
+    } else {
+        bgMarker.setLatLng([state.lat, state.lng]);
     }
-
-    // Если ничего надёжного не нашли — используем лучшее что есть
-    // с лёгким "дрожанием" координат (10-20 см)
-    if (bestResult && bestResult.lat && bestResult.lng) {
-        const jittered = jitterCoords(bestResult.lat, bestResult.lng);
-        // Попробуем ещё раз получить адрес для чуть сдвинутых координат
-        let finalAddr = bestResult.addr;
-        try {
-            const newAddr = await reverseGeocode(jittered.lat, jittered.lng);
-            if (isAddressReliable(newAddr)) {
-                finalAddr = newAddr;
-            }
-        } catch (e) { /* оставляем прежний */ }
-
-        state.lat = jittered.lat;
-        state.lng = jittered.lng;
-        state.location = finalAddr || t('locationUnknown');
-        displayLoc.textContent = state.location;
-        locActions.style.display = 'flex';
-        return;
-    }
-
-    // Совсем ничего не получилось — ставим условное местоположение
-    // со случайным небольшим смещением от центра города по умолчанию
-    const fallbackLat = 43.238949 + (Math.random() - 0.5) * 0.00002; // Алматы центр ±20 см
-    const fallbackLng = 76.889709 + (Math.random() - 0.5) * 0.00002;
-    let fallbackAddr = t('locationUnknown');
-    try {
-        const addr = await reverseGeocode(fallbackLat, fallbackLng);
-        if (isAddressReliable(addr)) fallbackAddr = addr;
-    } catch (e) { /* ignore */ }
-
-    state.lat = fallbackLat;
-    state.lng = fallbackLng;
-    state.location = fallbackAddr;
-    displayLoc.textContent = state.location;
-    locActions.style.display = 'flex';
+    bgMap.setView([state.lat, state.lng], 15, { animate: true });
 }
 
 // ============================================================
-// FIREBASE
+// НАВИГАТОР (МАРШРУТ ЧЕРЕЗ OSRM)
 // ============================================================
-function publishOrder(order) {
-    const orderRef = push(ref(db, 'orders'));
-    return set(orderRef, { ...order, createdAt: Date.now(), status: 'waiting', driverId: null }).then(() => orderRef.key);
-}
-function publishDriver(status) {
-    const key = sanitizeKey(state.nick);
-    return set(ref(db, 'drivers/' + key), {
-        nick: state.nick, mail: state.mail, location: state.location,
-        lat: state.lat, lng: state.lng, hasCar: state.hasCar,
-        online: true, role: status || state.role, updatedAt: Date.now()
+function drawRoute(fromLat, fromLng, toLat, toLng, label) {
+    if (!bgMap) return;
+    if (routingControl) { bgMap.removeControl(routingControl); routingControl = null; }
+    routeInfo = null;
+
+    routingControl = L.Routing.control({
+        waypoints: [L.latLng(fromLat, fromLng), L.latLng(toLat, toLng)],
+        routeWhileDragging: false,
+        showAlternatives: false,
+        fitSelectedRoutes: true,
+        lineOptions: { styles: [{ color: '#06b6d4', opacity: 0.9, weight: 6 }] },
+        createMarker: function(i, waypoint, n) {
+            const colors = ['#34d399', '#f472b6'];
+            const icon = L.divIcon({
+                className: 'custom-pin-wrapper',
+                html: `<div style="width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${colors[i]};border:3px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,0.5);"></div>`,
+                iconSize: [26, 26], iconAnchor: [13, 26]
+            });
+            return L.marker(waypoint.latLng, { icon });
+        },
+        addWaypoints: false,
+        draggableWaypoints: false
+    }).addTo(bgMap);
+
+    routingControl.on('routesfound', (e) => {
+        const route = e.routes[0];
+        const dist = (route.summary.totalDistance / 1000).toFixed(1);
+        const time = Math.round(route.summary.totalTime / 60);
+        routeInfo = { distance: dist, time: time };
+        if (label) {
+            // Обновляем UI, если есть контейнер
+            const infoEl = document.getElementById('nav-info');
+            if (infoEl) {
+                infoEl.innerHTML = `
+                    <div class="route-info">
+                        <div class="route-info-item">
+                            <div class="route-info-label">${t('navDistance')}</div>
+                            <div class="route-info-value">${dist} км</div>
+                        </div>
+                        <div class="route-info-item">
+                            <div class="route-info-label">${t('navTime')}</div>
+                            <div class="route-info-value">${time} мин</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+    });
+
+    routingControl.on('routingerror', () => {
+        alert(t('navNoRoute'));
     });
 }
-function goOffline() {
-    if (!state.nick) return;
-    remove(ref(db, 'drivers/' + sanitizeKey(state.nick))).catch(() => {});
+
+function clearRoute() {
+    if (routingControl && bgMap) { bgMap.removeControl(routingControl); routingControl = null; }
+    routeInfo = null;
 }
 
 // ============================================================
-// КАРТА LEAFLET
+// FIREBASE — профиль и заказы
+// ============================================================
+function saveProfileToFirebase() {
+    if (!state.fullname) return;
+    const key = sanitizeKey(state.phone || state.fullname);
+    return set(ref(db, 'profiles/' + key), {
+        fullname: state.fullname, phone: state.phone, mail: state.mail, photo: state.photo, updatedAt: Date.now()
+    }).catch(() => {});
+}
+
+function publishOrder(order) {
+    const orderRef = push(ref(db, 'orders'));
+    return set(orderRef, {
+        ...order,
+        fullname: state.fullname, phone: state.phone, photo: state.photo,
+        createdAt: Date.now(), status: 'waiting', driverId: null
+    }).then(() => orderRef.key);
+}
+
+function publishDriver(status) {
+    const key = sanitizeKey(state.phone || state.fullname);
+    return set(ref(db, 'drivers/' + key), {
+        fullname: state.fullname, phone: state.phone, photo: state.photo, mail: state.mail,
+        location: state.location, lat: state.lat, lng: state.lng,
+        hasCar: state.hasCar, online: true, role: status || state.role, updatedAt: Date.now()
+    });
+}
+
+function goOffline() {
+    if (!state.fullname) return;
+    remove(ref(db, 'drivers/' + sanitizeKey(state.phone || state.fullname))).catch(() => {});
+}
+
+// ============================================================
+// КАРТА В МОДАЛКЕ (для таксиста — уточнить точку)
 // ============================================================
 let map = null, marker = null;
 let tempLocation = { lat: null, lng: null, address: '' };
@@ -1658,19 +1084,15 @@ function initMap() {
     if (map) { setTimeout(() => map.invalidateSize(), 100); return; }
     const startLat = state.lat || 43.238949;
     const startLng = state.lng || 76.889709;
-
     map = L.map('map', { zoomControl: true, attributionControl: true })
         .setView([startLat, startLng], state.lat ? 15 : 12);
-
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19, attribution: '&copy; OpenStreetMap'
     }).addTo(map);
-
     if (state.lat && state.lng) {
         setMapMarker(state.lat, state.lng);
         tempLocation = { lat: state.lat, lng: state.lng, address: state.location };
     }
-
     map.on('click', async (e) => {
         const { lat, lng } = e.latlng;
         setMapMarker(lat, lng);
@@ -1690,23 +1112,20 @@ function setMapMarker(lat, lng) {
         iconSize: [32, 32], iconAnchor: [16, 32]
     });
     marker = L.marker([lat, lng], { icon }).addTo(map);
-    tempLocation.lat = lat;
-    tempLocation.lng = lng;
+    tempLocation.lat = lat; tempLocation.lng = lng;
 }
 
 function renderChosenLocation(addr) {
     chosenLocWrap.innerHTML = `
-        <div class="chosen-location">
-            <svg viewBox="0 0 24 24">
-                <path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z"/>
-                <circle cx="12" cy="10" r="2.5"/>
-            </svg>
-            <span>${escapeHtml(addr)}</span>
+        <div class="chosen-location" style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:14px;margin-bottom:12px;font-size:0.8rem;font-weight:600;color:#a7f3d0;">
+            <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#6ee7b7;stroke-width:2.2;fill:none;flex-shrink:0;"><path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(addr)}</span>
         </div>
     `;
 }
 
-btnSearchCity.addEventListener('click', () => {
+// Кнопка "Уточнить на карте" — только у таксиста
+function openMapModal() {
     modalMap.classList.add('active');
     mapSearch.value = '';
     mapSuggestions.innerHTML = '';
@@ -1729,7 +1148,7 @@ btnSearchCity.addEventListener('click', () => {
         }
         if (map) map.invalidateSize();
     }, 250);
-});
+}
 
 let searchTimeout = null;
 mapSearch.addEventListener('input', () => {
@@ -1738,38 +1157,57 @@ mapSearch.addEventListener('input', () => {
     if (q.length < 3) { mapSuggestions.classList.remove('active'); return; }
     searchTimeout = setTimeout(async () => {
         const results = await forwardGeocode(q);
-        if (results.length === 0) { mapSuggestions.classList.remove('active'); return; }
         mapSuggestions.innerHTML = '';
-        results.forEach(r => {
-            const el = document.createElement('div');
-            el.className = 'map-suggestion';
-            el.textContent = r.display_name;
-            el.addEventListener('click', async () => {
-                const lat = parseFloat(r.lat), lng = parseFloat(r.lon);
-                mapSuggestions.classList.remove('active');
-                mapSearch.value = r.display_name;
-                map.setView([lat, lng], 16);
-                setMapMarker(lat, lng);
-                mapHint.innerHTML = t('locateAddress');
-                const addr = await reverseGeocode(lat, lng);
-                tempLocation = { lat, lng, address: addr || t('locationUnknown') };
-                mapHint.innerHTML = `<strong>${t('chosen')}:</strong> ${escapeHtml(addr || t('locationUnknown'))}`;
-                renderChosenLocation(addr || t('locationUnknown'));
-            });
-            mapSuggestions.appendChild(el);
+
+        const manualEl = document.createElement('div');
+        manualEl.className = 'map-suggestion manual';
+        manualEl.style.cssText = 'padding:12px 16px;font-size:0.8rem;font-weight:600;color:#a7f3d0;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.05);';
+        manualEl.textContent = t('manualAddress') + ': «' + q + '»';
+        manualEl.addEventListener('click', () => {
+            mapSuggestions.classList.remove('active');
+            mapSearch.value = q;
+            const center = map.getCenter();
+            setMapMarker(center.lat, center.lng);
+            tempLocation = { lat: center.lat, lng: center.lng, address: q };
+            mapHint.innerHTML = `<strong>${t('chosen')}:</strong> ${escapeHtml(q)}`;
+            renderChosenLocation(q);
         });
+        mapSuggestions.appendChild(manualEl);
+
+        if (results.length > 0) {
+            results.forEach(r => {
+                const el = document.createElement('div');
+                el.className = 'map-suggestion';
+                el.style.cssText = 'padding:12px 16px;font-size:0.8rem;font-weight:500;color:rgba(255,255,255,0.85);cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.05);line-height:1.35;';
+                el.textContent = r.display_name;
+                el.addEventListener('click', async () => {
+                    const lat = parseFloat(r.lat), lng = parseFloat(r.lon);
+                    mapSuggestions.classList.remove('active');
+                    mapSearch.value = r.display_name;
+                    map.setView([lat, lng], 16);
+                    setMapMarker(lat, lng);
+                    mapHint.innerHTML = t('locateAddress');
+                    const addr = await reverseGeocode(lat, lng);
+                    tempLocation = { lat, lng, address: addr || t('locationUnknown') };
+                    mapHint.innerHTML = `<strong>${t('chosen')}:</strong> ${escapeHtml(addr || t('locationUnknown'))}`;
+                    renderChosenLocation(addr || t('locationUnknown'));
+                });
+                mapSuggestions.appendChild(el);
+            });
+        }
         mapSuggestions.classList.add('active');
+        mapSuggestions.style.display = 'block';
     }, 400);
 });
 
 document.addEventListener('click', (e) => {
     if (!mapSearch.contains(e.target) && !mapSuggestions.contains(e.target)) {
         mapSuggestions.classList.remove('active');
+        mapSuggestions.style.display = 'none';
     }
 });
 
 btnMapCancel.addEventListener('click', () => modalMap.classList.remove('active'));
-
 btnMapConfirm.addEventListener('click', () => {
     if (!tempLocation.lat || !tempLocation.lng) {
         mapHint.innerHTML = t('selectPoint');
@@ -1781,16 +1219,16 @@ btnMapConfirm.addEventListener('click', () => {
     state.lng = tempLocation.lng;
     state.location = tempLocation.address;
     displayLoc.textContent = state.location;
+    manualAddressInput.value = state.location;
     modalMap.classList.remove('active');
+    updateBgMarker();
     if (state.role === 'driver') publishDriver('driver').catch(() => {});
+    if (state.role) renderCurrentRole();
 });
-
-modalMap.addEventListener('click', (e) => {
-    if (e.target === modalMap) modalMap.classList.remove('active');
-});
+modalMap.addEventListener('click', (e) => { if (e.target === modalMap) modalMap.classList.remove('active'); });
 
 // ============================================================
-// РЕНДЕР: ВОДИТЕЛЬ
+// РЕНДЕР ВОДИТЕЛЯ
 // ============================================================
 function renderDriverOrders() {
     contentArea.innerHTML = `
@@ -1814,7 +1252,6 @@ function renderDriverOrders() {
         const orders = Object.entries(data).map(([id, o]) => ({ id, ...o }))
             .filter(o => o.status === 'waiting')
             .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-
         if (orders.length === 0) {
             wrap.innerHTML = `<div class="waiting"><div class="radar"><div class="radar-core"></div></div><div class="waiting-text">${t('searchEmpty')}</div></div>`;
             return;
@@ -1829,7 +1266,7 @@ function renderDriverOrders() {
                 <div class="order-route">
                     <div class="route-line"><span class="dot dot-start"></span><span>${escapeHtml(o.from || '—')}</span></div>
                     <div class="route-line"><span class="dot dot-end"></span><span>${escapeHtml(o.to || '—')}</span></div>
-                    <div class="order-meta"><span>${escapeHtml(o.location || '')}</span><span>${escapeHtml(o.nick || '')}</span></div>
+                    <div class="order-meta"><span>${escapeHtml(o.location || '')}</span><span>${escapeHtml(o.fullname || o.phone || '')}</span></div>
                 </div>
                 <div class="order-price">${o.price} ₸</div>
             `;
@@ -1842,9 +1279,9 @@ function renderDriverOrders() {
 }
 
 function openDriverOrderModal(order) {
-    const modal = modalPrice.querySelector('.modal');
+    const modal = $('price-modal-content');
     modal.innerHTML = `
-        <div class="modal-title">${t('orderFrom')} ${escapeHtml(order.nick || '')}</div>
+        <div class="modal-title">${t('orderFrom')} ${escapeHtml(order.fullname || '')}</div>
         <div class="modal-sub">${escapeHtml(order.location || '')}</div>
         <div class="active-price">${order.price} ₸</div>
         <div class="active-route">
@@ -1857,13 +1294,13 @@ function openDriverOrderModal(order) {
         </div>
     `;
     modalPrice.classList.add('active');
-
     modal.querySelector('#drv-decline').addEventListener('click', () => modalPrice.classList.remove('active'));
     modal.querySelector('#drv-accept').addEventListener('click', async () => {
         await update(ref(db, 'orders/' + order.id), {
             status: 'accepted',
-            driverId: sanitizeKey(state.nick),
-            driverNick: state.nick,
+            driverId: sanitizeKey(state.phone || state.fullname),
+            driverName: state.fullname,
+            driverPhoto: state.photo,
             acceptedAt: Date.now()
         });
         state.activeOrderId = order.id;
@@ -1873,10 +1310,7 @@ function openDriverOrderModal(order) {
 }
 
 function renderDriverActiveOrder(order) {
-    if (state.driverOrdersListener) {
-        off(ref(db, 'orders'), 'value', state.driverOrdersListener);
-        state.driverOrdersListener = null;
-    }
+    if (state.driverOrdersListener) { off(ref(db, 'orders'), 'value', state.driverOrdersListener); state.driverOrdersListener = null; }
     contentArea.innerHTML = `
         <div class="active-order">
             <div class="active-title">${t('driverAccepted')}</div>
@@ -1884,30 +1318,71 @@ function renderDriverActiveOrder(order) {
             <div class="active-route">
                 <div class="route-line"><span class="dot dot-start"></span><span>${escapeHtml(order.from || '—')}</span></div>
                 <div class="route-line"><span class="dot dot-end"></span><span>${escapeHtml(order.to || '—')}</span></div>
-                <div class="order-meta" style="padding-left:14px;"><span>${t('passenger')}: ${escapeHtml(order.nick || '')}</span></div>
+                <div class="order-meta" style="padding-left:14px;"><span>${t('passenger')}: ${escapeHtml(order.fullname || '')}</span></div>
                 <div class="order-meta" style="padding-left:14px;"><span>${t('place')}: ${escapeHtml(order.location || '')}</span></div>
             </div>
-            <div class="active-actions">
+            <div id="nav-info"></div>
+            <div class="active-actions" style="flex-direction:column; gap:10px;">
+                <button class="btn btn-nav" id="drv-nav-passenger">${t('navToPassenger')}</button>
+                <button class="btn btn-nav" id="drv-nav-destination">${t('navToDestination')}</button>
                 <button class="btn btn-danger" id="drv-finish">${t('btnFinish')}</button>
             </div>
         </div>
     `;
+    // Показываем карту для таксиста
+    showBgMap(true);
+
+    // Навигация к пассажиру
+    document.getElementById('drv-nav-passenger').addEventListener('click', async () => {
+        if (!state.lat || !state.lng) { alert(t('noLocation')); return; }
+        // Геокодируем адрес пассажира
+        const coords = await geocodeAddress(order.location || order.from);
+        if (coords) {
+            drawRoute(state.lat, state.lng, coords.lat, coords.lng, t('navToPassenger'));
+        } else {
+            alert(t('navNoRoute'));
+        }
+    });
+    // Навигация к месту назначения
+    document.getElementById('drv-nav-destination').addEventListener('click', async () => {
+        const coords = await geocodeAddress(order.to);
+        const startCoords = await geocodeAddress(order.from);
+        if (coords && startCoords) {
+            drawRoute(startCoords.lat, startCoords.lng, coords.lat, coords.lng, t('navToDestination'));
+        } else if (coords && state.lat && state.lng) {
+            drawRoute(state.lat, state.lng, coords.lat, coords.lng, t('navToDestination'));
+        } else {
+            alert(t('navNoRoute'));
+        }
+    });
+
     document.getElementById('drv-finish').addEventListener('click', async () => {
         if (state.activeOrderId) await remove(ref(db, 'orders/' + state.activeOrderId));
         state.activeOrderId = null;
+        clearRoute();
+        showBgMap(false);
         renderDriverOrders();
     });
 }
 
+async function geocodeAddress(addr) {
+    if (!addr) return null;
+    const results = await forwardGeocode(addr);
+    if (results && results.length > 0) {
+        return { lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon) };
+    }
+    return null;
+}
+
 // ============================================================
-// РЕНДЕР: ПАССАЖИР
+// РЕНДЕР ПАССАЖИРА
 // ============================================================
 function renderPassengerScreen() {
     if (state.activePassengerOrderId) { renderPassengerActiveOrder(); return; }
     contentArea.innerHTML = `
         <div class="section-label">${t('readyTrip')}</div>
         <button class="btn" id="btn-create-order">${t('btnOrderTaxi')}</button>
-        <div style="margin-top:14px;"></div>
+        <div style="margin-top:12px;"></div>
         <button class="btn btn-ghost" id="btn-my-orders">${t('btnMyOrders')}</button>
     `;
     document.getElementById('btn-create-order').addEventListener('click', () => {
@@ -1920,17 +1395,17 @@ function renderPassengerScreen() {
 }
 
 function resetPriceModalHandlers() {
-    const modal = modalPrice.querySelector('.modal');
+    const modal = $('price-modal-content');
     modal.innerHTML = `
         <div class="modal-title">${t('priceTitle')}</div>
         <div class="modal-sub">${t('priceSub')}</div>
         <div class="field">
             <label class="field-label" for="price-input">${t('priceLabel')}</label>
-            <input type="number" id="price-input" class="field-input" placeholder="350" min="50" step="10">
+            <input type="number" id="price-input" class="field-input" placeholder="1500" min="100" step="50">
         </div>
         <div class="field">
             <label class="field-label" for="from-input">${t('priceFrom')}</label>
-            <input type="text" id="from-input" class="field-input" placeholder="">
+            <input type="text" id="from-input" class="field-input" placeholder="${escapeHtml(state.location || '')}">
         </div>
         <div class="field">
             <label class="field-label" for="to-input">${t('priceTo')}</label>
@@ -1942,21 +1417,18 @@ function resetPriceModalHandlers() {
         </div>
     `;
     const newPrice = document.getElementById('price-input');
-    const newFrom  = document.getElementById('from-input');
-    const newTo    = document.getElementById('to-input');
-    const newCancel= document.getElementById('btn-price-cancel');
-    const newSubmit= document.getElementById('btn-price-submit');
-
-    newCancel.addEventListener('click', () => modalPrice.classList.remove('active'));
-    newSubmit.addEventListener('click', async () => {
+    const newFrom = document.getElementById('from-input');
+    const newTo = document.getElementById('to-input');
+    document.getElementById('btn-price-cancel').addEventListener('click', () => modalPrice.classList.remove('active'));
+    document.getElementById('btn-price-submit').addEventListener('click', async () => {
         const price = parseInt(newPrice.value, 10);
-        const from = newFrom.value.trim();
+        const from = newFrom.value.trim() || state.location;
         const to = newTo.value.trim();
-        if (!price || price < 50) { newPrice.style.borderColor = 'rgba(244,63,94,0.7)'; setTimeout(() => newPrice.style.borderColor = '', 1200); return; }
+        if (!price || price < 100) { newPrice.style.borderColor = 'rgba(244,63,94,0.7)'; setTimeout(() => newPrice.style.borderColor = '', 1200); return; }
         if (!from) { newFrom.style.borderColor = 'rgba(244,63,94,0.7)'; setTimeout(() => newFrom.style.borderColor = '', 1200); return; }
         if (!to) { newTo.style.borderColor = 'rgba(244,63,94,0.7)'; setTimeout(() => newTo.style.borderColor = '', 1200); return; }
         const orderId = await publishOrder({
-            from, to, price, nick: state.nick, mail: state.mail,
+            from, to, price,
             location: state.location, lat: state.lat, lng: state.lng
         });
         state.activePassengerOrderId = orderId;
@@ -2007,14 +1479,21 @@ function renderPassengerActiveOrder() {
                 renderPassengerScreen();
             });
         } else if (o.status === 'accepted') {
+            const driverPhoto = o.driverPhoto
+                ? `<img src="${o.driverPhoto}" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid rgba(16,185,129,0.4);margin-bottom:12px;">`
+                : `<div style="width:56px;height:56px;border-radius:50%;background:rgba(16,185,129,0.2);border:2px solid rgba(16,185,129,0.4);display:flex;align-items:center;justify-content:center;margin-bottom:12px;"><svg viewBox="0 0 24 24" style="width:28px;height:28px;stroke:#6ee7b7;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round;"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg></div>`;
             view.innerHTML = `
                 <div class="active-order">
                     <div class="active-title">${t('driverOnWay')}</div>
+                    <div style="display:flex; flex-direction:column; align-items:center; margin: 8px 0 14px;">
+                        ${driverPhoto}
+                        <div style="font-size:1rem;font-weight:700;color:#fff;">${escapeHtml(o.driverName || '')}</div>
+                        <div style="font-size:0.78rem;color:rgba(255,255,255,0.5);margin-top:2px;">${t('driverName')}</div>
+                    </div>
                     <div class="active-price">${o.price} ₸</div>
                     <div class="active-route">
                         <div class="route-line"><span class="dot dot-start"></span><span>${escapeHtml(o.from)}</span></div>
                         <div class="route-line"><span class="dot dot-end"></span><span>${escapeHtml(o.to)}</span></div>
-                        <div class="order-meta" style="padding-left:14px;"><span>${t('driverName')}: ${escapeHtml(o.driverNick || '')}</span></div>
                     </div>
                     <div class="waiting" style="padding:16px;">
                         <div class="waiting-text">${t('driverAcceptedOrder')}</div>
@@ -2037,7 +1516,7 @@ function renderPassengerOrdersList() {
         const list = document.getElementById('pax-list');
         if (!list) return;
         if (!data) { list.innerHTML = `<div class="empty">${t('noOrders')}</div>`; return; }
-        const mine = Object.entries(data).map(([id, o]) => ({ id, ...o })).filter(o => o.nick === state.nick);
+        const mine = Object.entries(data).map(([id, o]) => ({ id, ...o })).filter(o => o.phone === state.phone);
         if (mine.length === 0) { list.innerHTML = `<div class="empty">${t('noOrders')}</div>`; return; }
         list.innerHTML = '<div class="orders"></div>';
         const box = list.querySelector('.orders');
@@ -2067,39 +1546,59 @@ function renderPassengerOrdersList() {
 // ============================================================
 function renderCurrentRole() {
     roleLabel.textContent = state.role === 'driver' ? t('roleDriverLabel') : t('rolePassengerLabel');
-    displayNick.textContent = state.nick;
-    if (state.role === 'driver') publishDriver('driver').catch(() => {});
-    else goOffline();
-    if (state.role === 'driver') renderDriverOrders();
-    else renderPassengerScreen();
+    displayName.textContent = state.fullname || '—';
+    settingsRole.textContent = state.role === 'driver' ? t('roleDriverLabel') : t('rolePassengerLabel');
+
+    if (state.role === 'driver') {
+        showBgMap(true);
+        publishDriver('driver').catch(() => {});
+        renderDriverOrders();
+    } else {
+        showBgMap(false);
+        goOffline();
+        renderPassengerScreen();
+    }
 }
 
 // ============================================================
-// ОБРАБОТЧИКИ
+// РЕГИСТРАЦИЯ
 // ============================================================
-btnAuth.addEventListener('click', () => {
-    const mail = mailInput.value.trim();
-    const nick = nickInput.value.trim().replace(/^@+/, '');
-    if (!mail || !mail.includes('@') || !mail.includes('.')) {
-        mailInput.focus(); mailInput.style.borderColor = 'rgba(244,63,94,0.7)';
-        setTimeout(() => mailInput.style.borderColor = '', 1200); return;
+btnReg.addEventListener('click', () => {
+    const fullname = fullnameInput.value.trim();
+    const phone = phoneInput.value.trim();
+    const digits = phone.replace(/\D/g, '');
+
+    if (!fullname) {
+        fullnameInput.focus();
+        fullnameInput.style.borderColor = 'rgba(244,63,94,0.7)';
+        setTimeout(() => fullnameInput.style.borderColor = '', 1200);
+        return;
     }
-    if (!nick) {
-        nickInput.focus(); nickInput.style.borderColor = 'rgba(244,63,94,0.7)';
-        setTimeout(() => nickInput.style.borderColor = '', 1200); return;
+    if (digits.length < 11) {
+        phoneInput.focus();
+        phoneInput.style.borderColor = 'rgba(244,63,94,0.7)';
+        setTimeout(() => phoneInput.style.borderColor = '', 1200);
+        return;
     }
-    state.mail = mail;
-    state.nick = '@' + nick;
-    displayNick.textContent = state.nick;
+    if (!state.photo) { openPhotoModal(); return; }
+
+    state.fullname = fullname;
+    state.phone = phone;
+    if (!state.mail) state.mail = phone.replace(/\D/g, '') + '@vtaxi.kz';
+    displayName.textContent = state.fullname;
+    saveProfileToFirebase();
     showScreen('role');
 });
 
 toggleMode.addEventListener('click', () => {
     state.isLogin = !state.isLogin;
-    btnAuth.textContent = state.isLogin ? 'Войти' : t('btnContinue');
+    btnReg.textContent = state.isLogin ? 'Войти' : t('btnContinue');
     toggleMode.textContent = state.isLogin ? t('toggleRegister') : t('toggleLogin');
 });
 
+// ============================================================
+// ВЫБОР РОЛИ
+// ============================================================
 roleCards.forEach(card => {
     card.addEventListener('click', () => {
         const role = card.dataset.role;
@@ -2111,11 +1610,72 @@ roleCards.forEach(card => {
             state.role = 'passenger'; state.hasCar = false;
         }
         showScreen('ride');
-        detectLocation().then(() => renderCurrentRole());
+        renderCurrentRole();
     });
 });
 
-btnBack.addEventListener('click', () => showScreen('auth'));
+btnBackRole.addEventListener('click', () => showScreen('reg'));
+
+// ============================================================
+// НАСТРОЙКИ
+// ============================================================
+function refreshSettingsView() {
+    settingsName.textContent = state.fullname || '—';
+    settingsNameValue.textContent = state.fullname || '—';
+    settingsPhoneValue.textContent = state.phone || '—';
+    settingsMailValue.textContent = state.mail || '—';
+    settingsRole.textContent = state.role === 'driver' ? t('roleDriverLabel') : t('rolePassengerLabel');
+}
+btnSettings.addEventListener('click', () => { refreshSettingsView(); showScreen('settings'); });
+btnBackSettings.addEventListener('click', () => { showScreen('ride'); renderCurrentRole(); });
+
+document.querySelectorAll('.settings-item').forEach(item => {
+    item.addEventListener('click', () => {
+        const action = item.dataset.action;
+        if (action === 'edit-name') openEditModal('name');
+        else if (action === 'edit-phone') openEditModal('phone');
+        else if (action === 'edit-mail') openEditModal('mail');
+        else if (action === 'edit-photo') openPhotoModal();
+    });
+});
+
+function openEditModal(field) {
+    editInput.value = '';
+    if (field === 'name') {
+        editTitle.textContent = t('editNameTitle'); editSub.textContent = t('editNameSub'); editLabel.textContent = t('editNameLabel');
+        editInput.type = 'text'; editInput.placeholder = 'Ерлан Сейітқали'; editInput.value = state.fullname;
+    } else if (field === 'phone') {
+        editTitle.textContent = t('editPhoneTitle'); editSub.textContent = t('editPhoneSub'); editLabel.textContent = t('editPhoneLabel');
+        editInput.type = 'tel'; editInput.placeholder = '+7 700 000 00 00'; editInput.value = state.phone;
+    } else if (field === 'mail') {
+        editTitle.textContent = t('editMailTitle'); editSub.textContent = t('editMailSub'); editLabel.textContent = t('editMailLabel');
+        editInput.type = 'email'; editInput.placeholder = 'name@mail.com'; editInput.value = state.mail;
+    }
+    editInput.dataset.field = field;
+    modalEdit.classList.add('active');
+    setTimeout(() => editInput.focus(), 100);
+}
+editInput.addEventListener('input', () => { if (editInput.dataset.field === 'phone') editInput.value = formatPhone(editInput.value); });
+btnEditCancel.addEventListener('click', () => modalEdit.classList.remove('active'));
+btnEditSave.addEventListener('click', () => {
+    const field = editInput.dataset.field;
+    const value = editInput.value.trim();
+    if (field === 'name') {
+        if (!value) { editInput.style.borderColor = 'rgba(244,63,94,0.7)'; setTimeout(() => editInput.style.borderColor = '', 1200); return; }
+        state.fullname = value; settingsName.textContent = value; settingsNameValue.textContent = value; displayName.textContent = value;
+    } else if (field === 'phone') {
+        const digits = value.replace(/\D/g, '');
+        if (digits.length < 11) { editInput.style.borderColor = 'rgba(244,63,94,0.7)'; setTimeout(() => editInput.style.borderColor = '', 1200); return; }
+        state.phone = value; settingsPhoneValue.textContent = value;
+    } else if (field === 'mail') {
+        if (!value || !value.includes('@') || !value.includes('.')) { editInput.style.borderColor = 'rgba(244,63,94,0.7)'; setTimeout(() => editInput.style.borderColor = '', 1200); return; }
+        state.mail = value; settingsMailValue.textContent = value;
+    }
+    saveProfileToFirebase();
+    if (state.role === 'driver') publishDriver('driver').catch(() => {});
+    modalEdit.classList.remove('active');
+});
+modalEdit.addEventListener('click', (e) => { if (e.target === modalEdit) modalEdit.classList.remove('active'); });
 
 btnLogout.addEventListener('click', () => {
     goOffline();
@@ -2123,39 +1683,30 @@ btnLogout.addEventListener('click', () => {
     if (state.driverOrdersListener) off(ref(db, 'orders'), 'value', state.driverOrdersListener);
     state.ordersListener = null; state.driverOrdersListener = null;
     state.activeOrderId = null; state.activePassengerOrderId = null;
-    state.mail = ''; state.nick = ''; state.role = null; state.hasCar = null;
-    state.location = ''; state.lat = null; state.lng = null;
-    mailInput.value = ''; nickInput.value = '';
+    state.fullname = ''; state.phone = ''; state.mail = ''; state.photo = '';
+    state.role = null; state.hasCar = null;
+    state.location = ''; state.lat = null; state.lng = null; state.manualAddress = '';
+    fullnameInput.value = ''; phoneInput.value = ''; manualAddressInput.value = '';
     state.isLogin = false;
-    btnAuth.textContent = t('btnContinue');
+    btnReg.textContent = t('btnContinue');
     toggleMode.textContent = t('toggleLogin');
-    showScreen('auth');
+    updateAllAvatars();
+    clearRoute();
+    showBgMap(false);
+    if (bgMarker && bgMap) { bgMap.removeLayer(bgMarker); bgMarker = null; }
+    showScreen('reg');
 });
 
-[mailInput, nickInput].forEach(inp => {
-    inp.addEventListener('keydown', e => { if (e.key === 'Enter') btnAuth.click(); });
-});
+modalPrice.addEventListener('click', (e) => { if (e.target === modalPrice) modalPrice.classList.remove('active'); });
+modalPhoto.addEventListener('click', (e) => { if (e.target === modalPhoto) modalPhoto.classList.remove('active'); });
 
-btnWrong.addEventListener('click', () => {
-    detectLocation().then(() => { if (state.role === 'driver') publishDriver('driver').catch(() => {}); });
-});
-
-modalPrice.addEventListener('click', (e) => {
-    if (e.target === modalPrice) modalPrice.classList.remove('active');
-});
+fullnameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') phoneInput.focus(); });
+phoneInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') btnReg.click(); });
 
 // ============================================================
 // ИНИЦИАЛИЗАЦИЯ
 // ============================================================
-showScreen('auth');
-
-const glass = document.querySelector('.glass');
-glass.style.opacity = '0';
-requestAnimationFrame(() => {
-    glass.style.transition = 'opacity 0.8s ease';
-    glass.style.opacity = '1';
-});
-
+showScreen('reg');
 window.addEventListener('beforeunload', () => goOffline());
 </script>
 </body>
