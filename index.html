@@ -1,0 +1,2031 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>вТакси</title>
+
+<!-- Шрифты: Playfair Display (логотип) + Manrope (интерфейс) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700&family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    html, body {
+        height: 100%;
+        width: 100%;
+        overflow: hidden;
+    }
+
+    body {
+        background: #05070d;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        position: relative;
+    }
+
+    ::-webkit-scrollbar { width: 0; height: 0; }
+    * { scrollbar-width: none; }
+
+    /* ============ ГРАДИЕНТНЫЕ ПЯТНА ============ */
+    .blob {
+        position: fixed;
+        border-radius: 50%;
+        filter: blur(90px);
+        opacity: 0.7;
+        z-index: 0;
+        will-change: transform;
+        pointer-events: none;
+    }
+
+    .blob-1 {
+        width: 55vmax; height: 55vmax;
+        background: radial-gradient(circle, #1e40af, transparent 70%);
+        top: -20vmax; left: -20vmax;
+        animation: float1 22s infinite alternate ease-in-out;
+    }
+    .blob-2 {
+        width: 60vmax; height: 60vmax;
+        background: radial-gradient(circle, #6b21a8, transparent 70%);
+        bottom: -25vmax; right: -20vmax;
+        animation: float2 26s infinite alternate ease-in-out;
+    }
+    .blob-3 {
+        width: 45vmax; height: 45vmax;
+        background: radial-gradient(circle, #0e7490, transparent 70%);
+        top: 40%; left: 55%;
+        animation: float3 20s infinite alternate ease-in-out;
+    }
+    .blob-4 {
+        width: 40vmax; height: 40vmax;
+        background: radial-gradient(circle, #be123c, transparent 70%);
+        bottom: 5%; left: 0%;
+        animation: float4 28s infinite alternate ease-in-out;
+        opacity: 0.45;
+    }
+
+    @keyframes float1 { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(8vmax, 6vmax) scale(1.15); } }
+    @keyframes float2 { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(-7vmax, -5vmax) scale(1.1); } }
+    @keyframes float3 { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(-5vmax, 8vmax) scale(1.2); } }
+    @keyframes float4 { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(6vmax, -6vmax) scale(1.05); } }
+
+    /* ============ ПЕРЕКЛЮЧАТЕЛЬ ЯЗЫКА ============ */
+    .lang-switch {
+        position: fixed;
+        top: 24px;
+        right: 24px;
+        z-index: 1000;
+        display: flex;
+        gap: 4px;
+        padding: 4px;
+        background: rgba(255, 255, 255, 0.06);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 16px;
+        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        animation: langIn 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.3s backwards;
+    }
+
+    @keyframes langIn {
+        from { opacity: 0; transform: translateY(-15px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .lang-btn {
+        padding: 8px 16px;
+        border: none;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.55);
+        font-family: 'Manrope', sans-serif;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 1.2px;
+        cursor: pointer;
+        border-radius: 12px;
+        transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .lang-btn::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        border-radius: 12px;
+        opacity: 0;
+        transform: scale(0.8);
+        transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+        z-index: -1;
+    }
+
+    .lang-btn:hover { color: rgba(255, 255, 255, 0.85); }
+    .lang-btn.active { color: #fff; }
+    .lang-btn.active::before {
+        opacity: 1;
+        transform: scale(1);
+        box-shadow: 0 8px 20px -6px rgba(99, 102, 241, 0.7);
+    }
+
+    .lang-divider {
+        width: 1px;
+        background: rgba(255, 255, 255, 0.1);
+        margin: 6px 0;
+        border-radius: 1px;
+    }
+
+    /* ============ ОСНОВНОЙ КОНТЕЙНЕР ============ */
+    .glass {
+        position: relative;
+        z-index: 10;
+        width: 100%;
+        max-width: 440px;
+        background: rgba(255, 255, 255, 0.045);
+        backdrop-filter: blur(28px) saturate(180%);
+        -webkit-backdrop-filter: blur(28px) saturate(180%);
+        border-radius: 38px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow:
+            0 40px 80px -20px rgba(0, 0, 0, 0.8),
+            inset 0 1px 0 rgba(255, 255, 255, 0.15),
+            inset 0 -1px 0 rgba(255, 255, 255, 0.03);
+        padding: 40px 32px;
+        color: #fff;
+        overflow: hidden;
+        transition: opacity 0.5s ease;
+        max-height: 92vh;
+        overflow-y: auto;
+    }
+
+    .glass::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(255,255,255,0.10) 0%, transparent 40%, transparent 60%, rgba(255,255,255,0.04) 100%);
+        pointer-events: none;
+        border-radius: 38px;
+        z-index: 0;
+    }
+
+    /* ============ ЭКРАНЫ ============ */
+    .screen {
+        display: none;
+        flex-direction: column;
+        animation: screenIn 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+        position: relative;
+        z-index: 2;
+    }
+    .screen.active { display: flex; }
+
+    @keyframes screenIn {
+        from { opacity: 0; transform: translateY(12px) scale(0.98); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* ============ ЛОГОТИП ============ */
+    .logo-wrap {
+        text-align: center;
+        margin-bottom: 14px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .logo {
+        font-family: 'Playfair Display', serif;
+        font-weight: 800;
+        font-size: 3.4rem;
+        letter-spacing: -2px;
+        line-height: 1;
+        background: linear-gradient(135deg, #ffffff 0%, #e0e7ff 40%, #a5b4fc 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        filter: drop-shadow(0 4px 20px rgba(129, 140, 248, 0.35));
+        position: relative;
+    }
+
+    .logo::after {
+        content: '';
+        position: absolute;
+        bottom: -8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 48px;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #818cf8, transparent);
+        border-radius: 2px;
+        opacity: 0.6;
+    }
+
+    /* ============ ПОДПИСЬ ============ */
+    .brand-sub {
+        text-align: center;
+        font-family: 'Manrope', sans-serif;
+        font-size: 0.7rem;
+        font-weight: 500;
+        letter-spacing: 4px;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.35);
+        margin-bottom: 32px;
+        animation: fadeInSlow 1s ease 0.3s backwards;
+    }
+
+    @keyframes fadeInSlow {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ============ ПОЛЯ ВВОДА ============ */
+    .field { margin-bottom: 18px; position: relative; }
+
+    .field-label {
+        display: block;
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.5);
+        margin-bottom: 8px;
+        padding-left: 4px;
+    }
+
+    .field-input {
+        width: 100%;
+        padding: 16px 20px;
+        border-radius: 18px;
+        background: rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        font-size: 0.98rem;
+        font-weight: 500;
+        color: #fff;
+        outline: none;
+        transition: all 0.3s ease;
+        box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
+        font-family: 'Manrope', sans-serif;
+    }
+
+    .field-input::placeholder { color: rgba(255,255,255,0.28); font-weight: 400; }
+
+    .field-input:focus {
+        border-color: rgba(165, 180, 252, 0.6);
+        background: rgba(0, 0, 0, 0.35);
+        box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.12), inset 0 2px 8px rgba(0,0,0,0.3);
+        transform: translateY(-2px);
+    }
+
+    /* ============ КНОПКИ ============ */
+    .btn {
+        width: 100%;
+        padding: 17px;
+        border-radius: 18px;
+        border: 1px solid rgba(255,255,255,0.15);
+        font-family: 'Manrope', sans-serif;
+        font-size: 1rem;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        color: #fff;
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+        box-shadow: 0 15px 30px -10px rgba(79, 70, 229, 0.6), inset 0 1px 0 rgba(255,255,255,0.25);
+        position: relative;
+        overflow: hidden;
+        margin-top: 8px;
+    }
+
+    .btn::after {
+        content: '';
+        position: absolute;
+        top: 0; left: -100%;
+        width: 100%; height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+        transition: left 0.7s ease;
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 22px 40px -10px rgba(124, 58, 237, 0.7), inset 0 1px 0 rgba(255,255,255,0.35);
+    }
+    .btn:hover::after { left: 100%; }
+    .btn:active { transform: translateY(0) scale(0.99); }
+
+    .btn-ghost {
+        background: rgba(255,255,255,0.06);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.12);
+        color: rgba(255,255,255,0.85);
+        font-weight: 600;
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.12); }
+
+    .btn-success {
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        box-shadow: 0 15px 30px -10px rgba(16, 185, 129, 0.6), inset 0 1px 0 rgba(255,255,255,0.25);
+    }
+    .btn-success:hover {
+        box-shadow: 0 22px 40px -10px rgba(16, 185, 129, 0.8), inset 0 1px 0 rgba(255,255,255,0.35);
+    }
+
+    .btn-danger {
+        background: linear-gradient(135deg, #be123c 0%, #e11d48 100%);
+        box-shadow: 0 15px 30px -10px rgba(225, 29, 72, 0.6), inset 0 1px 0 rgba(255,255,255,0.25);
+    }
+    .btn-danger:hover {
+        box-shadow: 0 22px 40px -10px rgba(225, 29, 72, 0.8), inset 0 1px 0 rgba(255,255,255,0.35);
+    }
+
+    /* ============ РАЗДЕЛИТЕЛЬ ============ */
+    .divider {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin: 22px 0 16px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.3);
+    }
+    .divider::before, .divider::after {
+        content: ''; flex: 1; height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    }
+
+    .link {
+        text-align: center;
+        font-size: 0.85rem;
+        color: rgba(255,255,255,0.5);
+        font-weight: 500;
+    }
+    .link span {
+        color: #a5b4fc;
+        font-weight: 700;
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+    .link span:hover { color: #c7d2fe; }
+
+    /* ============ ЭКРАН РОЛИ ============ */
+    .role-title {
+        font-family: 'Playfair Display', serif;
+        font-size: 2.2rem;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        text-align: center;
+        margin-bottom: 6px;
+        background: linear-gradient(135deg, #ffffff, #c7d2fe);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .role-desc {
+        text-align: center;
+        font-size: 0.88rem;
+        font-weight: 400;
+        color: rgba(255,255,255,0.45);
+        margin-bottom: 34px;
+    }
+
+    .role-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-bottom: 28px;
+    }
+
+    .role-card {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 24px;
+        padding: 28px 14px;
+        cursor: pointer;
+        transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+
+    .role-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 50% 0%, rgba(165,180,252,0.2), transparent 70%);
+        opacity: 0;
+        transition: opacity 0.4s;
+    }
+
+    .role-card:hover {
+        transform: translateY(-6px);
+        background: rgba(255,255,255,0.08);
+        border-color: rgba(165,180,252,0.45);
+        box-shadow: 0 25px 45px -15px rgba(99, 102, 241, 0.55), inset 0 1px 0 rgba(255,255,255,0.15);
+    }
+    .role-card:hover::before { opacity: 1; }
+    .role-card:active { transform: translateY(-3px) scale(0.98); }
+
+    .role-icon {
+        width: 52px;
+        height: 52px;
+        margin: 0 auto 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 16px;
+        background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.15));
+        border: 1px solid rgba(255,255,255,0.12);
+        color: #c7d2fe;
+        position: relative;
+        z-index: 1;
+        transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .role-card:hover .role-icon {
+        transform: scale(1.1) rotate(-3deg);
+        background: linear-gradient(135deg, rgba(99,102,241,0.5), rgba(139,92,246,0.3));
+        box-shadow: 0 12px 28px -6px rgba(99,102,241,0.6);
+    }
+
+    .role-icon svg {
+        width: 26px;
+        height: 26px;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        animation: iconFloat 3s ease-in-out infinite;
+    }
+
+    @keyframes iconFloat {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-3px); }
+    }
+
+    .role-name {
+        font-size: 1rem;
+        font-weight: 700;
+        letter-spacing: -0.2px;
+        color: #fff;
+        position: relative;
+        z-index: 1;
+    }
+
+    .role-hint {
+        font-size: 0.72rem;
+        font-weight: 500;
+        color: rgba(255,255,255,0.4);
+        margin-top: 4px;
+        position: relative;
+        z-index: 1;
+    }
+
+    /* ============ ЭКРАН ПОЕЗДКИ ============ */
+    .user-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 20px;
+        margin-bottom: 20px;
+    }
+
+    .user-info { display: flex; flex-direction: column; gap: 2px; }
+
+    .user-hello {
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.4);
+    }
+
+    .user-nick {
+        font-size: 0.95rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #a5b4fc, #818cf8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .logout {
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: rgba(255,255,255,0.7);
+        padding: 8px 14px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        font-family: 'Manrope', sans-serif;
+    }
+    .logout:hover { background: rgba(255,255,255,0.14); color: #fff; }
+
+    .location {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 18px;
+        background: linear-gradient(135deg, rgba(79,70,229,0.12), rgba(124,58,237,0.08));
+        border: 1px solid rgba(165,180,252,0.2);
+        border-radius: 20px;
+        margin-bottom: 14px;
+        transition: all 0.3s ease;
+    }
+
+    .location-pin {
+        width: 34px;
+        height: 34px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        box-shadow: 0 6px 14px -4px rgba(99,102,241,0.7);
+        flex-shrink: 0;
+        animation: pinPulse 2.5s ease-in-out infinite;
+    }
+
+    @keyframes pinPulse {
+        0%, 100% { box-shadow: 0 6px 14px -4px rgba(99,102,241,0.7); }
+        50% { box-shadow: 0 6px 24px -2px rgba(99,102,241,1); }
+    }
+
+    .location-pin svg {
+        width: 18px; height: 18px;
+        stroke: #fff; stroke-width: 2; fill: none;
+        stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    .location-text {
+        display: flex; flex-direction: column; gap: 1px;
+        min-width: 0; flex: 1;
+    }
+
+    .location-label {
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.45);
+    }
+
+    .location-value {
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: #fff;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .loc-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+        margin-bottom: 14px;
+    }
+
+    .loc-btn {
+        flex: 1;
+        padding: 9px 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.12);
+        background: rgba(255,255,255,0.05);
+        color: rgba(255,255,255,0.75);
+        font-size: 0.72rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        font-family: 'Manrope', sans-serif;
+    }
+    .loc-btn:hover {
+        background: rgba(255,255,255,0.12);
+        color: #fff;
+        transform: translateY(-1px);
+    }
+
+    .section-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 1.8px;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.4);
+        margin-bottom: 12px;
+        padding-left: 4px;
+    }
+
+    .orders {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-height: 280px;
+        overflow-y: auto;
+        padding-right: 4px;
+    }
+
+    .order {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 16px 18px;
+        background: rgba(255,255,255,0.035);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+        animation: orderIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+
+    .order:hover {
+        background: rgba(255,255,255,0.09);
+        border-color: rgba(165,180,252,0.4);
+        transform: translateX(4px);
+        box-shadow: 0 15px 30px -12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+
+    @keyframes orderIn {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .order-route {
+        display: flex; flex-direction: column; gap: 6px;
+        min-width: 0; flex: 1;
+    }
+
+    .route-line {
+        display: flex; align-items: center; gap: 8px;
+        font-size: 0.85rem; font-weight: 600; color: #fff;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .dot {
+        width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+    }
+    .dot-start { background: #34d399; box-shadow: 0 0 8px rgba(52,211,153,0.7); }
+    .dot-end { background: #f472b6; box-shadow: 0 0 8px rgba(244,114,182,0.7); }
+
+    .order-meta {
+        display: flex; gap: 10px;
+        font-size: 0.72rem; font-weight: 500;
+        color: rgba(255,255,255,0.45);
+        padding-left: 14px;
+    }
+
+    .order-price {
+        font-size: 1.05rem; font-weight: 800;
+        color: #a7f3d0; white-space: nowrap;
+        letter-spacing: -0.3px;
+    }
+
+    .empty {
+        text-align: center;
+        padding: 30px 20px;
+        color: rgba(255,255,255,0.4);
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 24px;
+        color: rgba(255,255,255,0.6);
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .spinner {
+        width: 20px; height: 20px;
+        border: 2px solid rgba(165,180,252,0.2);
+        border-top-color: #a5b4fc;
+        border-radius: 50%;
+        animation: spin 0.9s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .active-order {
+        padding: 18px;
+        background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(5,150,105,0.08));
+        border: 1px solid rgba(16,185,129,0.35);
+        border-radius: 22px;
+        margin-bottom: 16px;
+        animation: screenIn 0.5s ease;
+    }
+
+    .active-title {
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: #6ee7b7;
+        margin-bottom: 10px;
+    }
+
+    .active-price {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: #a7f3d0;
+        margin-bottom: 12px;
+        letter-spacing: -0.5px;
+    }
+
+    .active-route {
+        display: flex; flex-direction: column; gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    .active-actions { display: flex; gap: 10px; }
+    .active-actions .btn { margin-top: 0; padding: 13px; font-size: 0.9rem; }
+
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.7);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+        padding: 20px;
+        animation: screenIn 0.3s ease;
+    }
+    .modal-overlay.active { display: flex; }
+
+    .modal {
+        background: rgba(20, 25, 40, 0.92);
+        backdrop-filter: blur(28px);
+        -webkit-backdrop-filter: blur(28px);
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 30px;
+        padding: 28px;
+        width: 100%;
+        max-width: 380px;
+        animation: modalIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    @keyframes modalIn {
+        from { opacity: 0; transform: scale(0.9) translateY(20px); }
+        to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-title {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin-bottom: 6px;
+        letter-spacing: -0.3px;
+    }
+
+    .modal-sub {
+        font-size: 0.82rem;
+        color: rgba(255,255,255,0.5);
+        margin-bottom: 20px;
+    }
+
+    .waiting {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+        padding: 40px 20px;
+        text-align: center;
+    }
+
+    .radar {
+        position: relative;
+        width: 80px;
+        height: 80px;
+    }
+
+    .radar::before, .radar::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        border: 2px solid rgba(165,180,252,0.5);
+        animation: radar 2s ease-out infinite;
+    }
+    .radar::after { animation-delay: 1s; }
+
+    @keyframes radar {
+        0% { transform: scale(0.5); opacity: 1; }
+        100% { transform: scale(1.6); opacity: 0; }
+    }
+
+    .radar-core {
+        position: absolute;
+        inset: 25px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        box-shadow: 0 0 24px rgba(99,102,241,0.8);
+        animation: pinPulse 2s ease-in-out infinite;
+    }
+
+    .waiting-text {
+        font-size: 0.9rem;
+        color: rgba(255,255,255,0.6);
+        font-weight: 500;
+    }
+
+    /* ============ КАРТА ============ */
+    .map-wrapper {
+        position: relative;
+        width: 100%;
+        height: 260px;
+        border-radius: 20px;
+        overflow: hidden;
+        margin-bottom: 14px;
+        border: 1px solid rgba(255,255,255,0.15);
+        box-shadow: 0 10px 30px -10px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+
+    #map {
+        width: 100%;
+        height: 100%;
+        background: #0a0f1a;
+        z-index: 1;
+    }
+
+    .leaflet-container { background: #0a0f1a !important; font-family: 'Manrope', sans-serif !important; }
+    .leaflet-tile { filter: brightness(0.85) contrast(1.05) saturate(0.9) hue-rotate(180deg) invert(1) hue-rotate(180deg); }
+    .leaflet-control-zoom { border: none !important; box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important; border-radius: 12px !important; overflow: hidden; }
+    .leaflet-control-zoom a { background: rgba(20, 25, 40, 0.9) !important; color: #c7d2fe !important; border: 1px solid rgba(255,255,255,0.1) !important; font-size: 18px !important; width: 32px !important; height: 32px !important; line-height: 30px !important; transition: all 0.2s ease; }
+    .leaflet-control-zoom a:hover { background: rgba(99, 102, 241, 0.4) !important; color: #fff !important; }
+    .leaflet-control-attribution { background: rgba(10, 15, 26, 0.7) !important; color: rgba(255,255,255,0.5) !important; font-size: 9px !important; padding: 2px 6px !important; border-radius: 8px 0 0 0; }
+    .leaflet-control-attribution a { color: #a5b4fc !important; }
+
+    .custom-pin {
+        width: 32px; height: 32px;
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        border: 3px solid #fff;
+        box-shadow: 0 6px 16px rgba(79, 70, 229, 0.7);
+        position: relative;
+        animation: pinDrop 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .custom-pin::after {
+        content: '';
+        position: absolute;
+        inset: 50%;
+        width: 8px; height: 8px;
+        background: #fff;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    @keyframes pinDrop {
+        0% { transform: rotate(-45deg) translateY(-30px); opacity: 0; }
+        100% { transform: rotate(-45deg) translateY(0); opacity: 1; }
+    }
+
+    .map-hint {
+        position: absolute;
+        top: 12px; left: 12px; right: 12px;
+        background: rgba(10, 15, 26, 0.85);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(165,180,252,0.25);
+        border-radius: 14px;
+        padding: 10px 14px;
+        font-size: 0.78rem;
+        font-weight: 500;
+        color: rgba(255,255,255,0.85);
+        z-index: 500;
+        text-align: center;
+        pointer-events: none;
+        animation: screenIn 0.5s ease;
+    }
+
+    .map-hint strong { color: #a5b4fc; }
+
+    .map-search-wrap {
+        position: relative;
+        margin-bottom: 12px;
+        z-index: 600;
+    }
+
+    .map-search-input {
+        width: 100%;
+        padding: 14px 16px 14px 42px;
+        border-radius: 14px;
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(165,180,252,0.3);
+        color: #fff;
+        font-size: 0.9rem;
+        font-weight: 500;
+        outline: none;
+        font-family: 'Manrope', sans-serif;
+        transition: all 0.3s ease;
+    }
+
+    .map-search-input:focus {
+        border-color: rgba(165,180,252,0.7);
+        box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.15);
+    }
+
+    .map-search-input::placeholder { color: rgba(255,255,255,0.35); }
+
+    .map-search-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 18px; height: 18px;
+        stroke: rgba(165,180,252,0.7);
+        stroke-width: 2;
+        fill: none;
+        pointer-events: none;
+    }
+
+    .map-suggestions {
+        position: absolute;
+        top: 100%; left: 0; right: 0;
+        margin-top: 6px;
+        background: rgba(20, 25, 40, 0.96);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(165,180,252,0.25);
+        border-radius: 14px;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 700;
+        display: none;
+        box-shadow: 0 20px 40px -10px rgba(0,0,0,0.7);
+    }
+
+    .map-suggestions.active { display: block; }
+
+    .map-suggestion {
+        padding: 12px 16px;
+        font-size: 0.82rem;
+        font-weight: 500;
+        color: rgba(255,255,255,0.85);
+        cursor: pointer;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        transition: background 0.2s ease;
+        line-height: 1.35;
+    }
+    .map-suggestion:last-child { border-bottom: none; }
+    .map-suggestion:hover { background: rgba(165,180,252,0.15); color: #fff; }
+
+    .chosen-location {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        border-radius: 14px;
+        margin-bottom: 14px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #a7f3d0;
+        animation: screenIn 0.4s ease;
+    }
+
+    .chosen-location svg { width: 18px; height: 18px; stroke: #6ee7b7; stroke-width: 2.2; fill: none; flex-shrink: 0; }
+    .chosen-location span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    @media (max-width: 500px) {
+        .lang-switch { top: 14px; right: 14px; }
+        .lang-btn { padding: 6px 12px; font-size: 0.72rem; }
+    }
+
+    @media (max-width: 400px) {
+        .glass { padding: 32px 22px; border-radius: 30px; }
+        .logo { font-size: 2.8rem; }
+        .role-title { font-size: 1.8rem; }
+        .role-grid { gap: 10px; }
+        .role-card { padding: 22px 10px; border-radius: 20px; }
+        .map-wrapper { height: 220px; }
+    }
+</style>
+</head>
+<body>
+
+    <!-- Переключатель языка -->
+    <div class="lang-switch">
+        <button class="lang-btn active" data-lang="ru">RU</button>
+        <div class="lang-divider"></div>
+        <button class="lang-btn" data-lang="kz">KZ</button>
+    </div>
+
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+    <div class="blob blob-4"></div>
+
+    <div class="glass">
+        <!-- ЭКРАН 1: АВТОРИЗАЦИЯ -->
+        <div class="screen active" id="screen-auth">
+            <div class="logo-wrap">
+                <div class="logo">вТакси</div>
+            </div>
+            <div class="brand-sub" data-i18n="brandSub">сервис поездок</div>
+
+            <div class="field">
+                <label class="field-label" for="mail" data-i18n="labelMail">Mail</label>
+                <input type="email" id="mail" class="field-input" placeholder="name@mail.com" autocomplete="email">
+            </div>
+
+            <div class="field">
+                <label class="field-label" for="nick" data-i18n="labelNick">Никнейм</label>
+                <input type="text" id="nick" class="field-input" placeholder="@nickname" autocomplete="username">
+            </div>
+
+            <button class="btn" id="btn-auth" data-i18n="btnContinue">Продолжить</button>
+
+            <div class="divider" data-i18n="dividerOr">или</div>
+            <div class="link">
+                <span id="toggle-mode" data-i18n="toggleLogin">У меня уже есть аккаунт</span>
+            </div>
+        </div>
+
+        <!-- ЭКРАН 2: ВЫБОР РОЛИ -->
+        <div class="screen" id="screen-role">
+            <div class="role-title" data-i18n="roleTitle">Кто вы?</div>
+            <div class="role-desc" data-i18n="roleDesc">Выберите свою роль, чтобы продолжить</div>
+
+            <div class="role-grid">
+                <div class="role-card" data-role="driver">
+                    <div class="role-icon">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M5 17h14M5 17a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2M5 17l1.5-5.5A2 2 0 0 1 8.4 10h7.2a2 2 0 0 1 1.9 1.5L19 17"/>
+                            <circle cx="7.5" cy="17" r="1.5"/>
+                            <circle cx="16.5" cy="17" r="1.5"/>
+                            <path d="M8 10V8a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                    </div>
+                    <div class="role-name" data-i18n="roleDriver">Таксист</div>
+                    <div class="role-hint" data-i18n="roleDriverHint">Принимать заказы</div>
+                </div>
+
+                <div class="role-card" data-role="passenger">
+                    <div class="role-icon">
+                        <svg viewBox="0 0 24 24">
+                            <circle cx="12" cy="8" r="3.5"/>
+                            <path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/>
+                        </svg>
+                    </div>
+                    <div class="role-name" data-i18n="rolePassenger">Пассажир</div>
+                    <div class="role-hint" data-i18n="rolePassengerHint">Найти машину</div>
+                </div>
+            </div>
+
+            <button class="btn btn-ghost" id="btn-back" data-i18n="btnBack">Назад</button>
+        </div>
+
+        <!-- ЭКРАН 3: ОСНОВНОЙ -->
+        <div class="screen" id="screen-ride">
+            <div class="user-bar">
+                <div class="user-info">
+                    <div class="user-hello" id="role-label" data-i18n="roleLabel">Роль</div>
+                    <div class="user-nick" id="display-nick">@user</div>
+                </div>
+                <button class="logout" id="btn-logout" data-i18n="btnLogout">Выйти</button>
+            </div>
+
+            <div class="location">
+                <div class="location-pin">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z"/>
+                        <circle cx="12" cy="10" r="2.5"/>
+                    </svg>
+                </div>
+                <div class="location-text">
+                    <div class="location-label" data-i18n="locLabel">Ваше местоположение</div>
+                    <div class="location-value" id="display-location" data-i18n="locDetecting">Определяем...</div>
+                </div>
+            </div>
+
+            <div class="loc-actions" id="loc-actions" style="display:none;">
+                <button class="loc-btn" id="btn-wrong" data-i18n="locWrong">Неправильно?</button>
+                <button class="loc-btn" id="btn-search-city" data-i18n="locMap">Выбрать на карте</button>
+            </div>
+
+            <div id="content-area"></div>
+        </div>
+    </div>
+
+    <!-- МОДАЛКА ЦЕНЫ -->
+    <div class="modal-overlay" id="modal-price">
+        <div class="modal">
+            <div class="modal-title" data-i18n="priceTitle">Ваш заказ</div>
+            <div class="modal-sub" data-i18n="priceSub">Укажите стоимость поездки</div>
+            <div class="field">
+                <label class="field-label" for="price-input" data-i18n="priceLabel">Цена, ₽</label>
+                <input type="number" id="price-input" class="field-input" placeholder="350" min="50" step="10">
+            </div>
+            <div class="field">
+                <label class="field-label" for="from-input" data-i18n="priceFrom">Откуда</label>
+                <input type="text" id="from-input" class="field-input" placeholder="ул. Ленина, 15">
+            </div>
+            <div class="field">
+                <label class="field-label" for="to-input" data-i18n="priceTo">Куда</label>
+                <input type="text" id="to-input" class="field-input" placeholder="ТЦ «Галерея»">
+            </div>
+            <div style="display:flex; gap:10px; margin-top:18px;">
+                <button class="btn btn-ghost" id="btn-price-cancel" style="margin-top:0;" data-i18n="btnCancel">Отмена</button>
+                <button class="btn" id="btn-price-submit" style="margin-top:0;" data-i18n="btnCreateOrder">Создать заказ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛКА КАРТЫ -->
+    <div class="modal-overlay" id="modal-map">
+        <div class="modal" style="max-width: 480px;">
+            <div class="modal-title" data-i18n="mapTitle">Выбор местоположения</div>
+            <div class="modal-sub" data-i18n="mapSub">Кликните по карте или введите адрес</div>
+
+            <div class="map-search-wrap">
+                <svg class="map-search-icon" viewBox="0 0 24 24">
+                    <circle cx="11" cy="11" r="7"/>
+                    <path d="M21 21l-4.35-4.35"/>
+                </svg>
+                <input type="text" class="map-search-input" id="map-search" placeholder="Введите адрес, город, улицу..." data-i18n-placeholder="mapSearchPlaceholder">
+                <div class="map-suggestions" id="map-suggestions"></div>
+            </div>
+
+            <div class="map-wrapper">
+                <div id="map"></div>
+                <div class="map-hint" id="map-hint" data-i18n="mapHint">Нажмите на карту, чтобы выбрать точку</div>
+            </div>
+
+            <div id="chosen-location-wrap"></div>
+
+            <div style="display:flex; gap:10px; margin-top:6px;">
+                <button class="btn btn-ghost" id="btn-map-cancel" style="margin-top:0;" data-i18n="btnCancel">Отмена</button>
+                <button class="btn" id="btn-map-confirm" style="margin-top:0;" data-i18n="btnConfirm">Подтвердить</button>
+            </div>
+        </div>
+    </div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script type="module">
+// ============================================================
+// ПЕРЕВОДЫ
+// ============================================================
+const I18N = {
+    ru: {
+        brandSub: 'сервис поездок',
+        labelMail: 'Mail',
+        labelNick: 'Никнейм',
+        btnContinue: 'Продолжить',
+        dividerOr: 'или',
+        toggleLogin: 'У меня уже есть аккаунт',
+        toggleRegister: 'Создать новый аккаунт',
+        roleTitle: 'Кто вы?',
+        roleDesc: 'Выберите свою роль, чтобы продолжить',
+        roleDriver: 'Таксист',
+        roleDriverHint: 'Принимать заказы',
+        rolePassenger: 'Пассажир',
+        rolePassengerHint: 'Найти машину',
+        btnBack: 'Назад',
+        roleLabel: 'Роль',
+        btnLogout: 'Выйти',
+        locLabel: 'Ваше местоположение',
+        locDetecting: 'Определяем...',
+        locWrong: 'Неправильно?',
+        locMap: 'Выбрать на карте',
+        priceTitle: 'Ваш заказ',
+        priceSub: 'Укажите стоимость поездки',
+        priceLabel: 'Цена, ₽',
+        priceFrom: 'Откуда',
+        priceTo: 'Куда',
+        btnCancel: 'Отмена',
+        btnCreateOrder: 'Создать заказ',
+        btnConfirm: 'Подтвердить',
+        mapTitle: 'Выбор местоположения',
+        mapSub: 'Кликните по карте или введите адрес',
+        mapSearchPlaceholder: 'Введите адрес, город, улицу...',
+        mapHint: 'Нажмите на карту, чтобы выбрать точку',
+        roleDriverLabel: 'Таксист',
+        rolePassengerLabel: 'Пассажир',
+        confirmCar: 'У вас есть автомобиль? Нажмите ОК — да, Отмена — нет.',
+        noLocation: 'Сначала определите местоположение',
+        searchLabel: 'Ожидание заказов рядом',
+        searchWait: 'Ищем пассажиров поблизости...',
+        searchEmpty: 'Пока нет заказов. Ожидаем...',
+        driverAccepted: 'Вы приняли заказ',
+        passenger: 'Пассажир',
+        place: 'Место',
+        btnFinish: 'Завершить',
+        btnDecline: 'Отказаться',
+        btnAccept: 'Принять',
+        orderFrom: 'Заказ от',
+        readyTrip: 'Готовы к поездке?',
+        btnOrderTaxi: 'Заказать такси',
+        btnMyOrders: 'Мои заказы',
+        myOrders: 'Мои активные заказы',
+        noOrders: 'У вас нет активных заказов',
+        loading: 'Загрузка...',
+        yourOrder: 'Ваш заказ',
+        searchDriver: 'Поиск водителя',
+        waitingDriver: 'Ждём водителя рядом...',
+        driverOnWay: 'Водитель едет к вам',
+        driverAcceptedOrder: 'Водитель уже принял заказ и едет',
+        btnCancelOrder: 'Отменить заказ',
+        driverName: 'Водитель',
+        statusWaiting: 'Поиск водителя',
+        statusAccepted: 'Водитель принял',
+        chosen: 'Выбрано',
+        current: 'Текущее',
+        locateAddress: 'Определяем адрес...',
+        locationUnknown: 'Неизвестное место',
+        selectPoint: 'Сначала выберите точку на карте'
+    },
+    kz: {
+        brandSub: 'сапар қызметі',
+        labelMail: 'Mail',
+        labelNick: 'Лақап аты',
+        btnContinue: 'Жалғастыру',
+        dividerOr: 'немесе',
+        toggleLogin: 'Менде аккаунт бар',
+        toggleRegister: 'Жаңа аккаунт жасау',
+        roleTitle: 'Сіз кімсіз?',
+        roleDesc: 'Жалғастыру үшін рөліңізді таңдаңыз',
+        roleDriver: 'Таксист',
+        roleDriverHint: 'Тапсырыстарды қабылдау',
+        rolePassenger: 'Жолаушы',
+        rolePassengerHint: 'Көлік табу',
+        btnBack: 'Артқа',
+        roleLabel: 'Рөл',
+        btnLogout: 'Шығу',
+        locLabel: 'Сіздің орналасқан жеріңіз',
+        locDetecting: 'Анықталуда...',
+        locWrong: 'Дұрыс емес пе?',
+        locMap: 'Картадан таңдау',
+        priceTitle: 'Сіздің тапсырысыңыз',
+        priceSub: 'Сапар құнын көрсетіңіз',
+        priceLabel: 'Бағасы, ₸',
+        priceFrom: 'Қайдан',
+        priceTo: 'Қайда',
+        btnCancel: 'Болдырмау',
+        btnCreateOrder: 'Тапсырыс жасау',
+        btnConfirm: 'Растау',
+        mapTitle: 'Орынды таңдау',
+        mapSub: 'Картаға басыңыз немесе мекенжайды енгізіңіз',
+        mapSearchPlaceholder: 'Мекенжай, қала, көше...',
+        mapHint: 'Нүктені таңдау үшін картаға басыңыз',
+        roleDriverLabel: 'Таксист',
+        rolePassengerLabel: 'Жолаушы',
+        confirmCar: 'Сізде көлік бар ма? Иә — ОК, Жоқ — Болдырмау.',
+        noLocation: 'Алдымен орналасқан жеріңізді анықтаңыз',
+        searchLabel: 'Жақын жердегі тапсырыстарды күту',
+        searchWait: 'Жақын жердегі жолаушыларды іздеу...',
+        searchEmpty: 'Әзірге тапсырыс жоқ. Күтеміз...',
+        driverAccepted: 'Сіз тапсырысты қабылдадыңыз',
+        passenger: 'Жолаушы',
+        place: 'Орын',
+        btnFinish: 'Аяқтау',
+        btnDecline: 'Бас тарту',
+        btnAccept: 'Қабылдау',
+        orderFrom: 'Тапсырыс',
+        readyTrip: 'Сапарға дайынсыз ба?',
+        btnOrderTaxi: 'Такси шақыру',
+        btnMyOrders: 'Менің тапсырыстарым',
+        myOrders: 'Менің белсенді тапсырыстарым',
+        noOrders: 'Сізде белсенді тапсырыс жоқ',
+        loading: 'Жүктелуде...',
+        yourOrder: 'Сіздің тапсырысыңыз',
+        searchDriver: 'Жүргізушіні іздеу',
+        waitingDriver: 'Жақын жердегі жүргізушіні күтеміз...',
+        driverOnWay: 'Жүргізуші сізге келе жатыр',
+        driverAcceptedOrder: 'Жүргізуші тапсырысты қабылдады',
+        btnCancelOrder: 'Тапсырыстан бас тарту',
+        driverName: 'Жүргізуші',
+        statusWaiting: 'Жүргізушіні іздеу',
+        statusAccepted: 'Жүргізуші қабылдады',
+        chosen: 'Таңдалды',
+        current: 'Ағымдағы',
+        locateAddress: 'Мекенжай анықталуда...',
+        locationUnknown: 'Белгісіз орын',
+        selectPoint: 'Алдымен картадан нүктені таңдаңыз'
+    }
+};
+
+let currentLang = 'ru';
+const t = key => I18N[currentLang][key] || key;
+
+function applyLang(lang) {
+    currentLang = lang;
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (I18N[lang][key]) el.textContent = I18N[lang][key];
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (I18N[lang][key]) el.placeholder = I18N[lang][key];
+    });
+    if (state.role) {
+        roleLabel.textContent = state.role === 'driver' ? t('roleDriverLabel') : t('rolePassengerLabel');
+    }
+    if (!state.location && displayLoc.textContent !== t('locDetecting')) {
+        displayLoc.textContent = t('locDetecting');
+    }
+}
+
+document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        applyLang(btn.dataset.lang);
+    });
+});
+
+// ============================================================
+// FIREBASE
+// ============================================================
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+    getDatabase, ref, push, set, onValue, remove, update, off
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyDkAlQ295XNbobRWMSnxIweTOrT1i3z_iA",
+    authDomain: "vtaxi-9bf65.firebaseapp.com",
+    databaseURL: "https://vtaxi-9bf65-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "vtaxi-9bf65",
+    storageBucket: "vtaxi-9bf65.firebasestorage.app",
+    messagingSenderId: "980343929642",
+    appId: "1:980343929642:web:1477642ebc7d9eccb8fc53",
+    measurementId: "G-SJ56WLN7QM"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// ============================================================
+// СОСТОЯНИЕ
+// ============================================================
+const state = {
+    mail: '', nick: '', role: null, hasCar: null,
+    location: '', lat: null, lng: null, isLogin: false,
+    activeOrderId: null, activePassengerOrderId: null,
+    ordersListener: null, driverOrdersListener: null
+};
+
+// ============================================================
+// DOM
+// ============================================================
+const $ = id => document.getElementById(id);
+
+const screens = { auth: $('screen-auth'), role: $('screen-role'), ride: $('screen-ride') };
+
+const mailInput   = $('mail');
+const nickInput   = $('nick');
+const btnAuth     = $('btn-auth');
+const toggleMode  = $('toggle-mode');
+const btnBack     = $('btn-back');
+const btnLogout   = $('btn-logout');
+const roleCards   = document.querySelectorAll('.role-card');
+const displayNick = $('display-nick');
+const displayLoc  = $('display-location');
+const roleLabel   = $('role-label');
+const contentArea = $('content-area');
+const locActions  = $('loc-actions');
+const btnWrong    = $('btn-wrong');
+const btnSearchCity = $('btn-search-city');
+
+const modalPrice  = $('modal-price');
+const modalMap    = $('modal-map');
+const mapSearch   = $('map-search');
+const mapSuggestions = $('map-suggestions');
+const mapHint     = $('map-hint');
+const chosenLocWrap = $('chosen-location-wrap');
+const btnMapCancel = $('btn-map-cancel');
+const btnMapConfirm = $('btn-map-confirm');
+
+// ============================================================
+// УТИЛИТЫ
+// ============================================================
+function showScreen(name) {
+    Object.keys(screens).forEach(k => screens[k].classList.toggle('active', k === name));
+}
+function sanitizeKey(str) { return String(str).replace(/[.#$\[\]\/@]/g, '_'); }
+function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ============================================================
+// ГЕОЛОКАЦИЯ
+// ============================================================
+function reverseGeocode(lat, lng) {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&accept-language=${currentLang === 'kz' ? 'kk' : 'ru'}&addressdetails=1`;
+    return fetch(url, { headers: { 'Accept': 'application/json' } })
+        .then(r => r.json())
+        .then(data => {
+            if (data && data.address) {
+                const a = data.address;
+                const city = a.city || a.town || a.village || a.state || '';
+                const street = a.road || a.pedestrian || a.footway || '';
+                const house = a.house_number || '';
+                const district = a.suburb || a.city_district || a.neighbourhood || '';
+                let parts = [];
+                if (city) parts.push(city);
+                if (district && district !== city) parts.push(district);
+                if (street) parts.push(street + (house ? ', ' + house : ''));
+                return parts.join(', ') || data.display_name || t('locationUnknown');
+            }
+            return data.display_name || t('locationUnknown');
+        })
+        .catch(() => t('locationUnknown'));
+}
+
+function forwardGeocode(query) {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=6&accept-language=${currentLang === 'kz' ? 'kk' : 'ru'}&addressdetails=1`;
+    return fetch(url, { headers: { 'Accept': 'application/json' } }).then(r => r.json()).catch(() => []);
+}
+
+function requestGeolocation() {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) { reject(new Error('no geo')); return; }
+        navigator.geolocation.getCurrentPosition(
+            pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+            err => reject(err),
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+        );
+    });
+}
+
+async function detectLocation() {
+    displayLoc.textContent = t('locDetecting');
+    locActions.style.display = 'none';
+    try {
+        const { lat, lng } = await requestGeolocation();
+        state.lat = lat; state.lng = lng;
+        const addr = await reverseGeocode(lat, lng);
+        state.location = addr;
+        displayLoc.textContent = addr;
+        locActions.style.display = 'flex';
+    } catch (err) {
+        displayLoc.textContent = t('locationUnknown');
+        locActions.style.display = 'flex';
+    }
+}
+
+// ============================================================
+// FIREBASE
+// ============================================================
+function publishOrder(order) {
+    const orderRef = push(ref(db, 'orders'));
+    return set(orderRef, { ...order, createdAt: Date.now(), status: 'waiting', driverId: null }).then(() => orderRef.key);
+}
+function publishDriver(status) {
+    const key = sanitizeKey(state.nick);
+    return set(ref(db, 'drivers/' + key), {
+        nick: state.nick, mail: state.mail, location: state.location,
+        lat: state.lat, lng: state.lng, hasCar: state.hasCar,
+        online: true, role: status || state.role, updatedAt: Date.now()
+    });
+}
+function goOffline() {
+    if (!state.nick) return;
+    remove(ref(db, 'drivers/' + sanitizeKey(state.nick))).catch(() => {});
+}
+
+// ============================================================
+// КАРТА LEAFLET
+// ============================================================
+let map = null, marker = null;
+let tempLocation = { lat: null, lng: null, address: '' };
+
+function initMap() {
+    if (map) { setTimeout(() => map.invalidateSize(), 100); return; }
+    const startLat = state.lat || 55.7558;
+    const startLng = state.lng || 37.6173;
+
+    map = L.map('map', { zoomControl: true, attributionControl: true })
+        .setView([startLat, startLng], state.lat ? 15 : 11);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19, attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+
+    if (state.lat && state.lng) {
+        setMapMarker(state.lat, state.lng);
+        tempLocation = { lat: state.lat, lng: state.lng, address: state.location };
+    }
+
+    map.on('click', async (e) => {
+        const { lat, lng } = e.latlng;
+        setMapMarker(lat, lng);
+        mapHint.innerHTML = t('locateAddress');
+        const addr = await reverseGeocode(lat, lng);
+        tempLocation = { lat, lng, address: addr };
+        mapHint.innerHTML = `<strong>${t('chosen')}:</strong> ${escapeHtml(addr)}`;
+        renderChosenLocation(addr);
+    });
+}
+
+function setMapMarker(lat, lng) {
+    if (marker) map.removeLayer(marker);
+    const icon = L.divIcon({
+        className: 'custom-pin-wrapper',
+        html: '<div class="custom-pin"></div>',
+        iconSize: [32, 32], iconAnchor: [16, 32]
+    });
+    marker = L.marker([lat, lng], { icon }).addTo(map);
+    tempLocation.lat = lat;
+    tempLocation.lng = lng;
+}
+
+function renderChosenLocation(addr) {
+    chosenLocWrap.innerHTML = `
+        <div class="chosen-location">
+            <svg viewBox="0 0 24 24">
+                <path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z"/>
+                <circle cx="12" cy="10" r="2.5"/>
+            </svg>
+            <span>${escapeHtml(addr)}</span>
+        </div>
+    `;
+}
+
+btnSearchCity.addEventListener('click', () => {
+    modalMap.classList.add('active');
+    mapSearch.value = '';
+    mapSuggestions.innerHTML = '';
+    mapSuggestions.classList.remove('active');
+    chosenLocWrap.innerHTML = '';
+    tempLocation = { lat: state.lat, lng: state.lng, address: state.location };
+    if (state.location) {
+        mapHint.innerHTML = `<strong>${t('current')}:</strong> ${escapeHtml(state.location)}`;
+        renderChosenLocation(state.location);
+    } else {
+        mapHint.innerHTML = t('mapHint');
+    }
+    setTimeout(() => {
+        initMap();
+        if (map && state.lat && state.lng) {
+            map.setView([state.lat, state.lng], 15);
+            setMapMarker(state.lat, state.lng);
+        } else if (map) {
+            map.setView([55.7558, 37.6173], 11);
+        }
+        if (map) map.invalidateSize();
+    }, 250);
+});
+
+let searchTimeout = null;
+mapSearch.addEventListener('input', () => {
+    clearTimeout(searchTimeout);
+    const q = mapSearch.value.trim();
+    if (q.length < 3) { mapSuggestions.classList.remove('active'); return; }
+    searchTimeout = setTimeout(async () => {
+        const results = await forwardGeocode(q);
+        if (results.length === 0) { mapSuggestions.classList.remove('active'); return; }
+        mapSuggestions.innerHTML = '';
+        results.forEach(r => {
+            const el = document.createElement('div');
+            el.className = 'map-suggestion';
+            el.textContent = r.display_name;
+            el.addEventListener('click', async () => {
+                const lat = parseFloat(r.lat), lng = parseFloat(r.lon);
+                mapSuggestions.classList.remove('active');
+                mapSearch.value = r.display_name;
+                map.setView([lat, lng], 16);
+                setMapMarker(lat, lng);
+                mapHint.innerHTML = t('locateAddress');
+                const addr = await reverseGeocode(lat, lng);
+                tempLocation = { lat, lng, address: addr };
+                mapHint.innerHTML = `<strong>${t('chosen')}:</strong> ${escapeHtml(addr)}`;
+                renderChosenLocation(addr);
+            });
+            mapSuggestions.appendChild(el);
+        });
+        mapSuggestions.classList.add('active');
+    }, 400);
+});
+
+document.addEventListener('click', (e) => {
+    if (!mapSearch.contains(e.target) && !mapSuggestions.contains(e.target)) {
+        mapSuggestions.classList.remove('active');
+    }
+});
+
+btnMapCancel.addEventListener('click', () => modalMap.classList.remove('active'));
+
+btnMapConfirm.addEventListener('click', () => {
+    if (!tempLocation.lat || !tempLocation.lng) {
+        mapHint.innerHTML = t('selectPoint');
+        mapHint.style.color = '#fca5a5';
+        setTimeout(() => mapHint.style.color = '', 1500);
+        return;
+    }
+    state.lat = tempLocation.lat;
+    state.lng = tempLocation.lng;
+    state.location = tempLocation.address;
+    displayLoc.textContent = state.location;
+    modalMap.classList.remove('active');
+    if (state.role === 'driver') publishDriver('driver').catch(() => {});
+});
+
+modalMap.addEventListener('click', (e) => {
+    if (e.target === modalMap) modalMap.classList.remove('active');
+});
+
+// ============================================================
+// РЕНДЕР: ВОДИТЕЛЬ
+// ============================================================
+function renderDriverOrders() {
+    contentArea.innerHTML = `
+        <div class="section-label">${t('searchLabel')}</div>
+        <div id="driver-orders-wrap">
+            <div class="waiting">
+                <div class="radar"><div class="radar-core"></div></div>
+                <div class="waiting-text">${t('searchWait')}</div>
+            </div>
+        </div>
+    `;
+    const wrap = document.getElementById('driver-orders-wrap');
+    if (state.driverOrdersListener) off(ref(db, 'orders'), 'value', state.driverOrdersListener);
+
+    const listener = onValue(ref(db, 'orders'), snapshot => {
+        const data = snapshot.val();
+        if (!data) {
+            wrap.innerHTML = `<div class="waiting"><div class="radar"><div class="radar-core"></div></div><div class="waiting-text">${t('searchEmpty')}</div></div>`;
+            return;
+        }
+        const orders = Object.entries(data).map(([id, o]) => ({ id, ...o }))
+            .filter(o => o.status === 'waiting')
+            .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+        if (orders.length === 0) {
+            wrap.innerHTML = `<div class="waiting"><div class="radar"><div class="radar-core"></div></div><div class="waiting-text">${t('searchEmpty')}</div></div>`;
+            return;
+        }
+        wrap.innerHTML = '<div class="orders"></div>';
+        const ordersBox = wrap.querySelector('.orders');
+        orders.forEach((o, i) => {
+            const el = document.createElement('div');
+            el.className = 'order';
+            el.style.animationDelay = (i * 0.07) + 's';
+            el.innerHTML = `
+                <div class="order-route">
+                    <div class="route-line"><span class="dot dot-start"></span><span>${escapeHtml(o.from || '—')}</span></div>
+                    <div class="route-line"><span class="dot dot-end"></span><span>${escapeHtml(o.to || '—')}</span></div>
+                    <div class="order-meta"><span>${escapeHtml(o.location || '')}</span><span>${escapeHtml(o.nick || '')}</span></div>
+                </div>
+                <div class="order-price">${o.price} ₸</div>
+            `;
+            el.addEventListener('click', () => openDriverOrderModal(o));
+            ordersBox.appendChild(el);
+        });
+    });
+    state.driverOrdersListener = listener;
+    state.ordersListener = listener;
+}
+
+function openDriverOrderModal(order) {
+    const modal = modalPrice.querySelector('.modal');
+    modal.innerHTML = `
+        <div class="modal-title">${t('orderFrom')} ${escapeHtml(order.nick || '')}</div>
+        <div class="modal-sub">${escapeHtml(order.location || '')}</div>
+        <div class="active-price">${order.price} ₸</div>
+        <div class="active-route">
+            <div class="route-line"><span class="dot dot-start"></span><span>${escapeHtml(order.from || '—')}</span></div>
+            <div class="route-line"><span class="dot dot-end"></span><span>${escapeHtml(order.to || '—')}</span></div>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <button class="btn btn-danger" id="drv-decline" style="margin-top:0;">${t('btnDecline')}</button>
+            <button class="btn btn-success" id="drv-accept" style="margin-top:0;">${t('btnAccept')}</button>
+        </div>
+    `;
+    modalPrice.classList.add('active');
+
+    modal.querySelector('#drv-decline').addEventListener('click', () => modalPrice.classList.remove('active'));
+    modal.querySelector('#drv-accept').addEventListener('click', async () => {
+        await update(ref(db, 'orders/' + order.id), {
+            status: 'accepted',
+            driverId: sanitizeKey(state.nick),
+            driverNick: state.nick,
+            acceptedAt: Date.now()
+        });
+        state.activeOrderId = order.id;
+        modalPrice.classList.remove('active');
+        renderDriverActiveOrder(order);
+    });
+}
+
+function renderDriverActiveOrder(order) {
+    if (state.driverOrdersListener) {
+        off(ref(db, 'orders'), 'value', state.driverOrdersListener);
+        state.driverOrdersListener = null;
+    }
+    contentArea.innerHTML = `
+        <div class="active-order">
+            <div class="active-title">${t('driverAccepted')}</div>
+            <div class="active-price">${order.price} ₸</div>
+            <div class="active-route">
+                <div class="route-line"><span class="dot dot-start"></span><span>${escapeHtml(order.from || '—')}</span></div>
+                <div class="route-line"><span class="dot dot-end"></span><span>${escapeHtml(order.to || '—')}</span></div>
+                <div class="order-meta" style="padding-left:14px;"><span>${t('passenger')}: ${escapeHtml(order.nick || '')}</span></div>
+                <div class="order-meta" style="padding-left:14px;"><span>${t('place')}: ${escapeHtml(order.location || '')}</span></div>
+            </div>
+            <div class="active-actions">
+                <button class="btn btn-danger" id="drv-finish">${t('btnFinish')}</button>
+            </div>
+        </div>
+    `;
+    document.getElementById('drv-finish').addEventListener('click', async () => {
+        if (state.activeOrderId) await remove(ref(db, 'orders/' + state.activeOrderId));
+        state.activeOrderId = null;
+        renderDriverOrders();
+    });
+}
+
+// ============================================================
+// РЕНДЕР: ПАССАЖИР
+// ============================================================
+function renderPassengerScreen() {
+    if (state.activePassengerOrderId) { renderPassengerActiveOrder(); return; }
+    contentArea.innerHTML = `
+        <div class="section-label">${t('readyTrip')}</div>
+        <button class="btn" id="btn-create-order">${t('btnOrderTaxi')}</button>
+        <div style="margin-top:14px;"></div>
+        <button class="btn btn-ghost" id="btn-my-orders">${t('btnMyOrders')}</button>
+    `;
+    document.getElementById('btn-create-order').addEventListener('click', () => {
+        if (!state.location) { alert(t('noLocation')); return; }
+        resetPriceModalHandlers();
+        modalPrice.classList.add('active');
+        setTimeout(() => document.getElementById('price-input')?.focus(), 100);
+    });
+    document.getElementById('btn-my-orders').addEventListener('click', renderPassengerOrdersList);
+}
+
+function resetPriceModalHandlers() {
+    const modal = modalPrice.querySelector('.modal');
+    modal.innerHTML = `
+        <div class="modal-title">${t('priceTitle')}</div>
+        <div class="modal-sub">${t('priceSub')}</div>
+        <div class="field">
+            <label class="field-label" for="price-input">${t('priceLabel')}</label>
+            <input type="number" id="price-input" class="field-input" placeholder="350" min="50" step="10">
+        </div>
+        <div class="field">
+            <label class="field-label" for="from-input">${t('priceFrom')}</label>
+            <input type="text" id="from-input" class="field-input" placeholder="">
+        </div>
+        <div class="field">
+            <label class="field-label" for="to-input">${t('priceTo')}</label>
+            <input type="text" id="to-input" class="field-input" placeholder="">
+        </div>
+        <div style="display:flex; gap:10px; margin-top:18px;">
+            <button class="btn btn-ghost" id="btn-price-cancel" style="margin-top:0;">${t('btnCancel')}</button>
+            <button class="btn" id="btn-price-submit" style="margin-top:0;">${t('btnCreateOrder')}</button>
+        </div>
+    `;
+    const newPrice = document.getElementById('price-input');
+    const newFrom  = document.getElementById('from-input');
+    const newTo    = document.getElementById('to-input');
+    const newCancel= document.getElementById('btn-price-cancel');
+    const newSubmit= document.getElementById('btn-price-submit');
+
+    newCancel.addEventListener('click', () => modalPrice.classList.remove('active'));
+    newSubmit.addEventListener('click', async () => {
+        const price = parseInt(newPrice.value, 10);
+        const from = newFrom.value.trim();
+        const to = newTo.value.trim();
+        if (!price || price < 50) { newPrice.style.borderColor = 'rgba(244,63,94,0.7)'; setTimeout(() => newPrice.style.borderColor = '', 1200); return; }
+        if (!from) { newFrom.style.borderColor = 'rgba(244,63,94,0.7)'; setTimeout(() => newFrom.style.borderColor = '', 1200); return; }
+        if (!to) { newTo.style.borderColor = 'rgba(244,63,94,0.7)'; setTimeout(() => newTo.style.borderColor = '', 1200); return; }
+        const orderId = await publishOrder({
+            from, to, price, nick: state.nick, mail: state.mail,
+            location: state.location, lat: state.lat, lng: state.lng
+        });
+        state.activePassengerOrderId = orderId;
+        modalPrice.classList.remove('active');
+        renderPassengerActiveOrder();
+    });
+}
+
+function renderPassengerActiveOrder() {
+    if (!state.activePassengerOrderId) { renderPassengerScreen(); return; }
+    contentArea.innerHTML = `
+        <div class="section-label">${t('yourOrder')}</div>
+        <div id="passenger-order-view">
+            <div class="loading"><div class="spinner"></div>${t('loading')}</div>
+        </div>
+    `;
+    const orderRef = ref(db, 'orders/' + state.activePassengerOrderId);
+    const listener = onValue(orderRef, snapshot => {
+        const o = snapshot.val();
+        const view = document.getElementById('passenger-order-view');
+        if (!view) return;
+        if (!o) {
+            state.activePassengerOrderId = null;
+            off(orderRef, 'value', listener);
+            renderPassengerScreen();
+            return;
+        }
+        if (o.status === 'waiting') {
+            view.innerHTML = `
+                <div class="active-order" style="background:linear-gradient(135deg,rgba(79,70,229,0.15),rgba(124,58,237,0.08));border-color:rgba(165,180,252,0.35);">
+                    <div class="active-title" style="color:#c7d2fe;">${t('searchDriver')}</div>
+                    <div class="active-price">${o.price} ₸</div>
+                    <div class="active-route">
+                        <div class="route-line"><span class="dot dot-start"></span><span>${escapeHtml(o.from)}</span></div>
+                        <div class="route-line"><span class="dot dot-end"></span><span>${escapeHtml(o.to)}</span></div>
+                    </div>
+                    <div class="waiting" style="padding:20px;">
+                        <div class="radar"><div class="radar-core"></div></div>
+                        <div class="waiting-text">${t('waitingDriver')}</div>
+                    </div>
+                </div>
+                <button class="btn btn-danger" id="pax-cancel" style="margin-top:14px;">${t('btnCancelOrder')}</button>
+            `;
+            document.getElementById('pax-cancel').addEventListener('click', async () => {
+                await remove(orderRef);
+                off(orderRef, 'value', listener);
+                state.activePassengerOrderId = null;
+                renderPassengerScreen();
+            });
+        } else if (o.status === 'accepted') {
+            view.innerHTML = `
+                <div class="active-order">
+                    <div class="active-title">${t('driverOnWay')}</div>
+                    <div class="active-price">${o.price} ₸</div>
+                    <div class="active-route">
+                        <div class="route-line"><span class="dot dot-start"></span><span>${escapeHtml(o.from)}</span></div>
+                        <div class="route-line"><span class="dot dot-end"></span><span>${escapeHtml(o.to)}</span></div>
+                        <div class="order-meta" style="padding-left:14px;"><span>${t('driverName')}: ${escapeHtml(o.driverNick || '')}</span></div>
+                    </div>
+                    <div class="waiting" style="padding:16px;">
+                        <div class="waiting-text">${t('driverAcceptedOrder')}</div>
+                    </div>
+                </div>
+            `;
+        }
+    });
+}
+
+function renderPassengerOrdersList() {
+    contentArea.innerHTML = `
+        <div class="section-label">${t('myOrders')}</div>
+        <div id="pax-list"><div class="loading"><div class="spinner"></div>${t('loading')}</div></div>
+        <button class="btn btn-ghost" id="pax-back" style="margin-top:14px;">${t('btnBack')}</button>
+    `;
+    document.getElementById('pax-back').addEventListener('click', renderPassengerScreen);
+    onValue(ref(db, 'orders'), snapshot => {
+        const data = snapshot.val();
+        const list = document.getElementById('pax-list');
+        if (!list) return;
+        if (!data) { list.innerHTML = `<div class="empty">${t('noOrders')}</div>`; return; }
+        const mine = Object.entries(data).map(([id, o]) => ({ id, ...o })).filter(o => o.nick === state.nick);
+        if (mine.length === 0) { list.innerHTML = `<div class="empty">${t('noOrders')}</div>`; return; }
+        list.innerHTML = '<div class="orders"></div>';
+        const box = list.querySelector('.orders');
+        mine.forEach((o, i) => {
+            const el = document.createElement('div');
+            el.className = 'order';
+            el.style.animationDelay = (i * 0.07) + 's';
+            el.innerHTML = `
+                <div class="order-route">
+                    <div class="route-line"><span class="dot dot-start"></span><span>${escapeHtml(o.from)}</span></div>
+                    <div class="route-line"><span class="dot dot-end"></span><span>${escapeHtml(o.to)}</span></div>
+                    <div class="order-meta"><span>${o.status === 'waiting' ? t('statusWaiting') : t('statusAccepted')}</span></div>
+                </div>
+                <div class="order-price">${o.price} ₸</div>
+            `;
+            el.addEventListener('click', () => {
+                state.activePassengerOrderId = o.id;
+                renderPassengerActiveOrder();
+            });
+            box.appendChild(el);
+        });
+    }, { onlyOnce: true });
+}
+
+// ============================================================
+// ОСНОВНОЙ РЕНДЕР
+// ============================================================
+function renderCurrentRole() {
+    roleLabel.textContent = state.role === 'driver' ? t('roleDriverLabel') : t('rolePassengerLabel');
+    displayNick.textContent = state.nick;
+    if (state.role === 'driver') publishDriver('driver').catch(() => {});
+    else goOffline();
+    if (state.role === 'driver') renderDriverOrders();
+    else renderPassengerScreen();
+}
+
+// ============================================================
+// ОБРАБОТЧИКИ
+// ============================================================
+btnAuth.addEventListener('click', () => {
+    const mail = mailInput.value.trim();
+    const nick = nickInput.value.trim().replace(/^@+/, '');
+    if (!mail || !mail.includes('@') || !mail.includes('.')) {
+        mailInput.focus(); mailInput.style.borderColor = 'rgba(244,63,94,0.7)';
+        setTimeout(() => mailInput.style.borderColor = '', 1200); return;
+    }
+    if (!nick) {
+        nickInput.focus(); nickInput.style.borderColor = 'rgba(244,63,94,0.7)';
+        setTimeout(() => nickInput.style.borderColor = '', 1200); return;
+    }
+    state.mail = mail;
+    state.nick = '@' + nick;
+    displayNick.textContent = state.nick;
+    showScreen('role');
+});
+
+toggleMode.addEventListener('click', () => {
+    state.isLogin = !state.isLogin;
+    btnAuth.textContent = state.isLogin ? 'Войти' : t('btnContinue');
+    toggleMode.textContent = state.isLogin ? t('toggleRegister') : t('toggleLogin');
+});
+
+roleCards.forEach(card => {
+    card.addEventListener('click', () => {
+        const role = card.dataset.role;
+        if (role === 'driver') {
+            const hasCar = confirm(t('confirmCar'));
+            if (!hasCar) { state.role = 'passenger'; state.hasCar = false; }
+            else { state.role = 'driver'; state.hasCar = true; }
+        } else {
+            state.role = 'passenger'; state.hasCar = false;
+        }
+        showScreen('ride');
+        detectLocation().then(() => renderCurrentRole());
+    });
+});
+
+btnBack.addEventListener('click', () => showScreen('auth'));
+
+btnLogout.addEventListener('click', () => {
+    goOffline();
+    if (state.ordersListener) off(ref(db, 'orders'), 'value', state.ordersListener);
+    if (state.driverOrdersListener) off(ref(db, 'orders'), 'value', state.driverOrdersListener);
+    state.ordersListener = null; state.driverOrdersListener = null;
+    state.activeOrderId = null; state.activePassengerOrderId = null;
+    state.mail = ''; state.nick = ''; state.role = null; state.hasCar = null;
+    state.location = ''; state.lat = null; state.lng = null;
+    mailInput.value = ''; nickInput.value = '';
+    state.isLogin = false;
+    btnAuth.textContent = t('btnContinue');
+    toggleMode.textContent = t('toggleLogin');
+    showScreen('auth');
+});
+
+[mailInput, nickInput].forEach(inp => {
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') btnAuth.click(); });
+});
+
+btnWrong.addEventListener('click', () => {
+    detectLocation().then(() => { if (state.role === 'driver') publishDriver('driver').catch(() => {}); });
+});
+
+modalPrice.addEventListener('click', (e) => {
+    if (e.target === modalPrice) modalPrice.classList.remove('active');
+});
+
+// ============================================================
+// ИНИЦИАЛИЗАЦИЯ
+// ============================================================
+showScreen('auth');
+
+const glass = document.querySelector('.glass');
+glass.style.opacity = '0';
+requestAnimationFrame(() => {
+    glass.style.transition = 'opacity 0.8s ease';
+    glass.style.opacity = '1';
+});
+
+window.addEventListener('beforeunload', () => goOffline());
+</script>
+</body>
+</html>
