@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>КЕТТІКGO — сервис поездок</title>
 <script>
-  // Применяем тему до отрисовки, чтобы не было мигания
   try { var th = localStorage.getItem('kettikgo-theme'); if (th === 'dark' || th === 'light') document.documentElement.setAttribute('data-theme', th); } catch (e) {}
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -51,7 +50,6 @@ body { background:var(--bg); color:var(--text); transition:background .5s ease, 
 ::-webkit-scrollbar { width:0; height:0; } * { scrollbar-width:none; }
 svg { stroke-linecap:round; stroke-linejoin:round; }
 
-/* плавный переход темы (круговое раскрытие через View Transitions) */
 ::view-transition-old(root), ::view-transition-new(root) { animation:none; mix-blend-mode:normal; }
 ::view-transition-old(root) { z-index:1; } ::view-transition-new(root) { z-index:2; }
 
@@ -62,28 +60,27 @@ svg { stroke-linecap:round; stroke-linejoin:round; }
   background-image:linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
   background-size:44px 44px; mask-image:radial-gradient(ellipse at 50% 40%, #000 20%, transparent 75%);
   -webkit-mask-image:radial-gradient(ellipse at 50% 40%, #000 20%, transparent 75%);
-  animation:gridMove 18s linear infinite; }
+  animation:gridMove 18s linear infinite; will-change:background-position; }
 @keyframes gridMove { to { background-position:44px 44px; } }
 .shape { position:fixed; z-index:0; pointer-events:none; border-radius:50%; background:var(--shape); filter:blur(2px); will-change:transform; }
 .shape-1 { width:46vmax; height:46vmax; top:-18vmax; left:-14vmax; animation:drift1 20s ease-in-out infinite alternate; }
 .shape-2 { width:38vmax; height:38vmax; bottom:-14vmax; right:-12vmax; animation:drift2 24s ease-in-out infinite alternate; }
 .shape-3 { width:14vmax; height:14vmax; top:30%; right:12%; border:2px solid var(--border-2); background:transparent; animation:spinSlow 30s linear infinite, drift3 9s ease-in-out infinite alternate; }
 .shape-4 { width:8vmax; height:8vmax; bottom:26%; left:9%; border-radius:30%; border:2px solid var(--border-2); background:transparent; animation:spinSlow 22s linear infinite reverse, drift3 7s ease-in-out infinite alternate; }
-@keyframes drift1 { to { transform:translate(8vmax,6vmax) scale(1.12); } }
-@keyframes drift2 { to { transform:translate(-7vmax,-5vmax) scale(1.1); } }
+@keyframes drift1 { to { transform:translate3d(8vmax,6vmax,0) scale(1.12); } }
+@keyframes drift2 { to { transform:translate3d(-7vmax,-5vmax,0) scale(1.1); } }
 @keyframes drift3 { to { translate:0 -24px; } }
 @keyframes spinSlow { to { transform:rotate(360deg); } }
 .bg-road { position:fixed; left:0; right:0; top:14%; height:2px; z-index:0; pointer-events:none; opacity:.7;
-  background:repeating-linear-gradient(90deg, var(--border-2) 0 26px, transparent 26px 52px); animation:roadMove 3s linear infinite; }
+  background:repeating-linear-gradient(90deg, var(--border-2) 0 26px, transparent 26px 52px); animation:roadMove 3s linear infinite; will-change:background-position; }
 @keyframes roadMove { to { background-position:52px 0; } }
-/* машина едет ровно по линии дороги: колёса стоят на линии */
-.bg-car { position:fixed; top:calc(14% - 25px); left:0; z-index:0; pointer-events:none; width:56px; opacity:.55; color:var(--text); animation:carDrive 14s linear infinite; }
+.bg-car { position:fixed; top:calc(14% - 25px); left:0; z-index:0; pointer-events:none; width:56px; opacity:.55; color:var(--text); animation:carDrive 14s linear infinite; will-change:transform; }
 .bg-road.r2 { top:calc(14% + 46px); opacity:.4; animation-direction:reverse; }
 .bg-car.c2 { top:calc(14% + 46px - 22px); width:44px; opacity:.35; animation:carDriveRev 19s linear infinite; animation-delay:-6s; }
-@keyframes carDrive { from { transform:translateX(-90px); } to { transform:translateX(calc(100vw + 90px)); } }
-@keyframes carDriveRev { from { transform:translateX(calc(100vw + 90px)) scaleX(-1); } to { transform:translateX(-90px) scaleX(-1); } }
+@keyframes carDrive { from { transform:translate3d(-90px,0,0); } to { transform:translate3d(calc(100vw + 90px),0,0); } }
+@keyframes carDriveRev { from { transform:translate3d(calc(100vw + 90px),0,0) scaleX(-1); } to { transform:translate3d(-90px,0,0) scaleX(-1); } }
 .cursor-glow { position:fixed; width:380px; height:380px; border-radius:50%; z-index:1; pointer-events:none; left:0; top:0;
-  background:radial-gradient(circle, var(--shape), transparent 65%); transform:translate(-50%,-50%); transition:opacity .4s; opacity:0; }
+  background:radial-gradient(circle, var(--shape), transparent 65%); transform:translate3d(-50%,-50%,0); transition:opacity .4s; opacity:0; will-change:transform; }
 
 #bg-map { position:fixed; inset:0; z-index:0; background:var(--bg-2); display:none; }
 #bg-map.visible { display:block; animation:fadeIn .6s ease; }
@@ -101,12 +98,12 @@ svg { stroke-linecap:round; stroke-linejoin:round; }
 #splash { position:fixed; inset:0; z-index:5000; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:26px; transition:opacity .6s ease, transform .8s cubic-bezier(.7,0,.2,1); }
 #splash.hide { opacity:0; transform:scale(1.15); pointer-events:none; }
 .splash-logo { font-family:'Unbounded',sans-serif; font-weight:800; font-size:clamp(1.8rem,8vw,3rem); letter-spacing:-1px; display:flex; align-items:center; }
-.splash-logo .ch { display:inline-block; opacity:0; transform:translateY(30px) rotate(8deg); animation:chIn .6s cubic-bezier(.22,1,.36,1) forwards; }
+.splash-logo .ch { display:inline-block; opacity:0; transform:translate3d(0,30px,0) rotate(8deg); animation:chIn .6s cubic-bezier(.22,1,.36,1) forwards; }
 .splash-logo .go { background:var(--btn); color:var(--btn-text); border-radius:12px; padding:0 .25em; margin-left:.12em; }
 @keyframes chIn { to { opacity:1; transform:none; } }
 .splash-road { width:min(280px,70vw); height:3px; border-radius:3px; background:var(--border); position:relative; overflow:hidden; }
 .splash-road::after { content:''; position:absolute; inset:0; width:40%; background:var(--btn); border-radius:3px; animation:loadBar 1.2s ease-in-out infinite; }
-@keyframes loadBar { from { transform:translateX(-100%); } to { transform:translateX(260%); } }
+@keyframes loadBar { from { transform:translate3d(-100%,0,0); } to { transform:translate3d(260%,0,0); } }
 
 /* ============================================================
    ПЕРЕКЛЮЧАТЕЛИ ЯЗЫКА И ТЕМЫ
@@ -124,7 +121,6 @@ svg { stroke-linecap:round; stroke-linejoin:round; }
 [data-theme="dark"] .theme-toggle .i-sun { transform:rotate(90deg) scale(.3); opacity:0; }
 [data-theme="dark"] .theme-toggle .i-moon { transform:rotate(0) scale(1); opacity:1; }
 
-/* сегмент «Светлая / Тёмная» в регистрации */
 .theme-seg { position:relative; display:grid; grid-template-columns:1fr 1fr; padding:4px; background:var(--input); border:1px solid var(--border); border-radius:16px; margin-bottom:16px; }
 .theme-seg button { position:relative; z-index:1; display:flex; align-items:center; justify-content:center; gap:8px; padding:11px 8px; border:none; background:transparent; color:var(--text-2); font-size:.82rem; font-weight:700; cursor:pointer; border-radius:12px; transition:color .35s; }
 .theme-seg button svg { width:17px; height:17px; stroke:currentColor; stroke-width:2; fill:none; transition:transform .5s cubic-bezier(.22,1,.36,1); }
@@ -140,17 +136,17 @@ svg { stroke-linecap:round; stroke-linejoin:round; }
 .screen { display:none; flex-direction:column; width:100%; height:100%; pointer-events:none; }
 .screen.active { display:flex; }
 .top-bar { position:absolute; top:16px; left:16px; right:150px; z-index:500; pointer-events:auto; display:flex; align-items:center; gap:12px; }
-.brand-pill { display:flex; align-items:center; gap:10px; padding:10px 16px; background:var(--sheet); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); border:1px solid var(--border); border-radius:100px; box-shadow:0 10px 30px -12px rgba(0,0,0,.35); animation:dropIn .7s cubic-bezier(.22,1,.36,1) both; }
-@keyframes dropIn { from { opacity:0; transform:translateY(-20px) scale(.9); } to { opacity:1; transform:none; } }
+.brand-pill { display:flex; align-items:center; gap:10px; padding:10px 16px; background:var(--sheet); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); border:1px solid var(--border); border-radius:100px; box-shadow:0 10px 30px -12px rgba(0,0,0,.35); animation:dropIn .7s cubic-bezier(.22,1,.36,1) both; will-change:transform,opacity; }
+@keyframes dropIn { from { opacity:0; transform:translate3d(0,-20px,0) scale(.9); } to { opacity:1; transform:none; } }
 .brand-logo { font-family:'Unbounded',sans-serif; font-weight:800; font-size:.95rem; letter-spacing:-.5px; }
 .brand-logo b { background:var(--btn); color:var(--btn-text); border-radius:6px; padding:1px 5px; margin-left:2px; font-weight:800; }
 .brand-dot { width:7px; height:7px; border-radius:50%; background:var(--ok); box-shadow:0 0 0 0 var(--ok); animation:ping 2s infinite; }
 @keyframes ping { 0% { box-shadow:0 0 0 0 rgba(5,150,105,.6); } 70% { box-shadow:0 0 0 10px rgba(5,150,105,0); } 100% { box-shadow:0 0 0 0 rgba(5,150,105,0); } }
 
 .bottom-sheet { position:absolute; bottom:0; left:0; right:0; margin:0 auto; max-width:560px; z-index:500; pointer-events:auto; background:var(--sheet); backdrop-filter:blur(32px) saturate(160%); -webkit-backdrop-filter:blur(32px) saturate(160%); border:1px solid var(--border); border-bottom:none; border-radius:32px 32px 0 0; box-shadow:var(--shadow); padding:12px 22px 26px; max-height:90vh; overflow-y:auto; animation:sheetIn .7s cubic-bezier(.22,1,.36,1); }
-@keyframes sheetIn { from { transform:translateY(60px); opacity:0; } to { transform:none; opacity:1; } }
+@keyframes sheetIn { from { transform:translate3d(0,60px,0); opacity:0; } to { transform:none; opacity:1; } }
 .screen.active .bottom-sheet > * { animation:rise .6s cubic-bezier(.22,1,.36,1) both; animation-delay:calc(var(--i,0) * 55ms + 100ms); }
-@keyframes rise { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:none; } }
+@keyframes rise { from { opacity:0; transform:translate3d(0,18px,0); } to { opacity:1; transform:none; } }
 .sheet-handle { width:44px; height:5px; border-radius:100px; background:var(--border-2); margin:0 auto 16px; }
 
 /* ЛОГО */
@@ -162,10 +158,10 @@ svg { stroke-linecap:round; stroke-linejoin:round; }
 @keyframes shine { 0%,60% { left:-60%; } 100% { left:140%; } }
 .hero-road { position:relative; height:34px; margin:2px 0 6px; overflow:hidden; }
 .hero-road::before { content:''; position:absolute; left:0; right:0; bottom:6px; height:2px; background:repeating-linear-gradient(90deg, var(--border-2) 0 14px, transparent 14px 28px); animation:roadMove 1.2s linear infinite; }
-.hero-car { position:absolute; bottom:8px; left:0; width:44px; color:var(--text); animation:heroDrive 5s cubic-bezier(.45,0,.55,1) infinite; }
+.hero-car { position:absolute; bottom:8px; left:0; width:44px; color:var(--text); animation:heroDrive 5s cubic-bezier(.45,0,.55,1) infinite; will-change:transform; }
 .hero-car svg { width:100%; display:block; animation:bounceCar .5s ease-in-out infinite alternate; }
 @keyframes heroDrive { 0% { left:-12%; } 100% { left:105%; } }
-@keyframes bounceCar { to { transform:translateY(-1.5px); } }
+@keyframes bounceCar { to { transform:translate3d(0,-1.5px,0); } }
 .brand-sub { text-align:center; font-size:.66rem; font-weight:600; letter-spacing:3.5px; text-transform:uppercase; color:var(--text-3); margin-bottom:16px; }
 
 /* АВАТАР */
@@ -195,7 +191,7 @@ svg { stroke-linecap:round; stroke-linejoin:round; }
 @keyframes shake { 0%,100% { transform:translateX(0); } 20% { transform:translateX(-7px); } 40% { transform:translateX(6px); } 60% { transform:translateX(-4px); } 80% { transform:translateX(3px); } }
 .field-input[type="date"] { color-scheme:light; } [data-theme="dark"] .field-input[type="date"] { color-scheme:dark; }
 
-/* КНОПКИ — светлая: чёрные, тёмная: белые */
+/* КНОПКИ */
 .btn { width:100%; padding:15px; border-radius:16px; border:1px solid transparent; font-size:.96rem; font-weight:800; letter-spacing:.2px; color:var(--btn-text); background:var(--btn); cursor:pointer; transition:transform .3s cubic-bezier(.22,1,.36,1), box-shadow .3s, background .4s, color .4s, opacity .3s; box-shadow:0 14px 28px -12px var(--btn-shadow); position:relative; overflow:hidden; margin-top:8px; }
 .btn::after { content:''; position:absolute; top:0; bottom:0; width:40%; left:-70%; background:linear-gradient(100deg, transparent, rgba(255,255,255,.28), transparent); transform:skewX(-20deg); transition:left .7s ease; }
 [data-theme="dark"] .btn::after { background:linear-gradient(100deg, transparent, rgba(0,0,0,.14), transparent); }
@@ -216,7 +212,7 @@ svg { stroke-linecap:round; stroke-linejoin:round; }
 .link span { color:var(--text); font-weight:800; cursor:pointer; background:linear-gradient(currentColor,currentColor) 0 100%/0 2px no-repeat; transition:background-size .4s; }
 .link span:hover { background-size:100% 2px; }
 
-/* СОГЛАСИЯ (чекбоксы) */
+/* СОГЛАСИЯ */
 .consent-box { display:flex; flex-direction:column; gap:10px; margin:6px 0 4px; padding:14px; background:var(--card); border:1px solid var(--border); border-radius:20px; }
 .check { display:flex; gap:12px; align-items:flex-start; cursor:pointer; font-size:.78rem; line-height:1.45; color:var(--text-2); font-weight:500; user-select:none; }
 .check input { display:none; }
@@ -240,7 +236,6 @@ svg { stroke-linecap:round; stroke-linejoin:round; }
 .role-name { font-size:1rem; font-weight:800; transform:translateZ(20px); }
 .role-hint { font-size:.7rem; color:var(--text-2); margin-top:4px; transform:translateZ(14px); }
 
-/* ---- новый экран выбора роли ---- */
 .role-card { padding:8px; text-align:left; border-radius:26px; position:relative; overflow:hidden; display:flex; flex-direction:column; gap:10px; }
 .role-card::before { content:''; position:absolute; top:0; bottom:0; width:45%; left:-70%; background:linear-gradient(100deg, transparent, var(--card-h), transparent); transform:skewX(-20deg); transition:left .8s ease; pointer-events:none; z-index:3; }
 .role-card:hover::before { left:130%; }
@@ -252,7 +247,6 @@ svg { stroke-linecap:round; stroke-linejoin:round; }
 .role-arrow { width:36px; height:36px; border-radius:50%; background:var(--btn); display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:transform .45s cubic-bezier(.34,1.56,.64,1); }
 .role-arrow svg { width:17px; height:17px; stroke:var(--btn-text); stroke-width:2.2; fill:none; transition:transform .4s; }
 .role-card:hover .role-arrow { transform:scale(1.12) rotate(-45deg); }
-/* сцена таксиста */
 .rs-b { position:absolute; bottom:34px; width:22px; background:var(--border); border-radius:4px 4px 0 0; animation:bldMove 9s linear infinite; }
 .rs-b:nth-child(2n) { animation-duration:12s; opacity:.7; }
 @keyframes bldMove { from { transform:translateX(40px); } to { transform:translateX(-140px); } }
@@ -261,7 +255,6 @@ svg { stroke-linecap:round; stroke-linejoin:round; }
 .rs-car { position:absolute; bottom:31px; left:0; width:54px; animation:rsDrive 4.5s cubic-bezier(.45,0,.55,1) infinite; }
 .role-card:hover .rs-car { animation-duration:2.4s; }
 @keyframes rsDrive { from { transform:translateX(-70px); } to { transform:translateX(230px); } }
-/* сцена пассажира */
 .scene-pax { display:flex; align-items:center; justify-content:center; }
 .rs-ring { position:absolute; left:62%; top:46%; width:70px; height:70px; margin:-35px 0 0 -35px; border-radius:50%; border:2px solid var(--text); opacity:0; animation:radar 2.6s ease-out infinite; }
 .rs-ring.b { animation-delay:.85s; } .rs-ring.c { animation-delay:1.7s; }
@@ -269,7 +262,6 @@ svg { stroke-linecap:round; stroke-linejoin:round; }
 .rs-man { position:absolute; bottom:12px; left:12%; width:30px; animation:manWalk 4.5s ease-in-out infinite; }
 @keyframes manWalk { 0%,100% { transform:translateX(0) rotate(-3deg); } 50% { transform:translateX(34px) rotate(3deg); } }
 
-/* ---- ожидание заказа ---- */
 .wait-scene { display:flex; flex-direction:column; align-items:center; gap:8px; padding:18px 8px 8px; text-align:center; }
 .wait-radar { position:relative; width:156px; height:156px; border-radius:50%; background:radial-gradient(circle, var(--card-h), transparent 72%); margin-bottom:10px; }
 .wait-radar .ring { position:absolute; inset:0; border-radius:50%; border:1.5px solid var(--border-2); }
@@ -323,7 +315,7 @@ svg { stroke-linecap:round; stroke-linejoin:round; }
 .orders { display:flex; flex-direction:column; gap:10px; max-height:300px; overflow-y:auto; padding-right:2px; }
 .order { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 16px; background:var(--card); border:1px solid var(--border); border-radius:20px; cursor:pointer; transition:all .3s cubic-bezier(.22,1,.36,1); animation:orderIn .55s cubic-bezier(.22,1,.36,1) backwards; }
 .order:hover { background:var(--card-h); border-color:var(--text); transform:translateX(5px) scale(1.01); }
-@keyframes orderIn { from { opacity:0; transform:translateX(-24px) scale(.96); } to { opacity:1; transform:none; } }
+@keyframes orderIn { from { opacity:0; transform:translate3d(-24px,0,0) scale(.96); } to { opacity:1; transform:none; } }
 .order-route { display:flex; flex-direction:column; gap:5px; min-width:0; flex:1; }
 .route-line { display:flex; align-items:center; gap:8px; font-size:.84rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
@@ -352,12 +344,11 @@ svg { stroke-linecap:round; stroke-linejoin:round; }
 /* МОДАЛКИ */
 .modal-overlay { position:fixed; inset:0; background:var(--overlay); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); display:none; align-items:center; justify-content:center; z-index:2000; padding:18px; overflow-y:auto; }
 .modal-overlay.active { display:flex; animation:fadeIn .3s; }
-.modal { background:var(--bg); border:1px solid var(--border-2); border-radius:28px; padding:24px; width:100%; max-width:420px; animation:modalIn .5s cubic-bezier(.34,1.4,.64,1); max-height:90vh; overflow-y:auto; margin:auto; box-shadow:0 40px 80px -30px rgba(0,0,0,.5); }
+.modal { background:var(--bg); border:1px solid var(--border-2); border-radius:28px; padding:24px; width:100%; max-width:420px; animation:modalIn .5s cubic-bezier(.34,1.4,.64,1); max-height:90vh; overflow-y:auto; margin:auto; box-shadow:0 40px 80px -30px rgba(0,0,0,.5); will-change:transform,opacity; }
 @keyframes modalIn { from { opacity:0; transform:scale(.85) translateY(30px); } to { opacity:1; transform:none; } }
 .modal-title { font-family:'Unbounded',sans-serif; font-size:1.15rem; font-weight:700; margin-bottom:6px; letter-spacing:-.3px; }
 .modal-sub { font-size:.8rem; color:var(--text-2); margin-bottom:16px; }
 
-/* ПРАВИЛА */
 .rules-modal { max-width:560px; padding:0; display:flex; flex-direction:column; max-height:90vh; overflow:hidden; }
 .rules-head { padding:22px 24px 14px; position:relative; }
 .rules-progress { position:absolute; left:0; right:0; bottom:0; height:3px; background:var(--border); }
@@ -467,22 +458,43 @@ svg { stroke-linecap:round; stroke-linejoin:round; }
 .order-marker { min-width:54px; padding:7px 10px; border-radius:14px; background:var(--btn,#0a0a0a); color:var(--btn-text,#fff); font-size:.78rem; font-weight:800; text-align:center; box-shadow:0 10px 20px -6px rgba(0,0,0,.5); position:relative; animation:markerDrop .6s cubic-bezier(.34,1.56,.64,1); white-space:nowrap; }
 .order-marker::after { content:''; position:absolute; left:50%; bottom:-5px; width:10px; height:10px; background:inherit; transform:translateX(-50%) rotate(45deg); }
 .order-marker.far { opacity:.8; } .order-marker.very-far { opacity:.6; }
-@keyframes markerDrop { from { transform:translateY(-40px) scale(.4); opacity:0; } to { transform:none; opacity:1; } }
+@keyframes markerDrop { from { transform:translate3d(0,-40px,0) scale(.4); opacity:0; } to { transform:none; opacity:1; } }
 .me-marker { width:24px; height:24px; border-radius:50%; background:var(--ok,#059669); border:4px solid #fff; box-shadow:0 0 0 6px rgba(5,150,105,.25); animation:ping 2s infinite; }
 .leaflet-div-icon, .order-marker-wrapper, .driver-marker-wrapper, .route-marker { background:transparent !important; border:none !important; }
 
 /* TOAST */
 #toasts { position:fixed; top:74px; left:0; right:0; z-index:6000; display:flex; flex-direction:column; align-items:center; gap:8px; pointer-events:none; }
-.toast { padding:12px 18px; border-radius:16px; background:var(--btn); color:var(--btn-text); font-size:.84rem; font-weight:700; box-shadow:0 16px 30px -10px rgba(0,0,0,.45); animation:toastIn .5s cubic-bezier(.34,1.56,.64,1), toastOut .4s 2.8s forwards; max-width:90vw; }
+.toast { padding:12px 18px; border-radius:16px; background:var(--btn); color:var(--btn-text); font-size:.84rem; font-weight:700; box-shadow:0 16px 30px -10px rgba(0,0,0,.45); animation:toastIn .5s cubic-bezier(.34,1.56,.64,1), toastOut .4s 2.8s forwards; max-width:90vw; will-change:transform,opacity; }
 .toast.bad { background:var(--bad); color:#fff; }
-@keyframes toastIn { from { opacity:0; transform:translateY(-24px) scale(.8); } to { opacity:1; transform:none; } }
-@keyframes toastOut { to { opacity:0; transform:translateY(-16px) scale(.9); } }
+@keyframes toastIn { from { opacity:0; transform:translate3d(0,-24px,0) scale(.8); } to { opacity:1; transform:none; } }
+@keyframes toastOut { to { opacity:0; transform:translate3d(0,-16px,0) scale(.9); } }
 
+/* ============================================================
+   SMS МОДАЛКА
+   ============================================================ */
+.sms-modal { max-width:400px; }
+.sms-sub { font-size:.82rem; color:var(--text-2); margin-bottom:20px; line-height:1.5; }
+.sms-code-wrap { display:flex; gap:10px; justify-content:center; margin-bottom:18px; }
+.sms-input {
+  width:44px; height:56px; border-radius:14px; background:var(--input); border:2px solid transparent;
+  font-size:1.4rem; font-weight:800; text-align:center; color:var(--text); outline:none;
+  transition:all .3s cubic-bezier(.22,1,.36,1); caret-color:var(--text);
+}
+.sms-input:focus { border-color:var(--text); background:transparent; transform:translateY(-2px) scale(1.04); box-shadow:0 8px 20px -10px var(--btn-shadow); }
+.sms-input.filled { border-color:var(--ok); background:var(--ok-soft); }
+.sms-input.error { border-color:var(--bad) !important; animation:shake .45s; }
+.sms-timer { text-align:center; font-size:.78rem; color:var(--text-2); font-weight:600; margin-bottom:14px; min-height:20px; }
+.sms-timer b { color:var(--text); font-variant-numeric:tabular-nums; }
+.sms-resend { color:var(--text); font-weight:800; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
+.sms-resend:disabled { color:var(--text-3); cursor:default; text-decoration:none; }
+.sms-actions { display:flex; gap:10px; margin-top:6px; }
+.sms-actions .btn { margin-top:0; }
 @media (max-width:500px) {
   .top-controls { top:12px; right:12px; } .lang-btn { padding:7px 10px; font-size:.7rem; }
   .top-bar { top:12px; left:12px; right:140px; }
   .bottom-sheet { padding:10px 16px 22px; border-radius:28px 28px 0 0; max-height:93vh; }
   .logo { font-size:1.8rem; } .orders-map-header { top:70px; left:12px; right:12px; } .orders-map-radius label { display:none; }
+  .sms-input { width:40px; height:50px; font-size:1.2rem; border-radius:12px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; } }
 </style>
@@ -612,7 +624,7 @@ svg { stroke-linecap:round; stroke-linejoin:round; }
         <div class="field"><label class="field-label" data-i18n="formBirthdate">Дата рождения</label><input type="date" id="form-birthdate" class="field-input"><div class="form-error" id="error-birthdate" data-i18n="errorBirthdate">Водитель должен быть не младше 18 лет</div></div>
         <div class="field"><label class="field-label" data-i18n="formIIN">ИИН</label><input type="text" id="form-iin" class="field-input" placeholder="123456789012" maxlength="12" inputmode="numeric"><div class="form-error" id="error-iin" data-i18n="errorIIN">Некорректный ИИН</div></div>
         <div class="field"><label class="field-label" data-i18n="formEmail">Email</label><input type="email" id="form-email" class="field-input" placeholder="name@mail.com"></div>
-        <div class="field"><label class="field-label" data-i18n="formPhone">Телефон (подтверждение по SMS)</label><input type="tel" id="form-phone" class="field-input" placeholder="+7 700 000 00 00"></div>
+        <div class="field"><label class="field-label" data-i18n="formPhoneDriver">Телефон</label><input type="tel" id="form-phone" class="field-input" placeholder="+7 700 000 00 00"></div>
         <button class="btn" id="btn-form-next-1" data-i18n="btnNext">Далее</button>
         <button class="btn btn-ghost" id="btn-form-back-1" data-i18n="btnBack">Назад</button>
       </div>
@@ -797,6 +809,25 @@ svg { stroke-linecap:round; stroke-linejoin:round; }
   <div style="display:flex; gap:10px; margin-top:6px;"><button class="btn btn-ghost" id="btn-map-cancel" style="margin-top:0;" data-i18n="btnCancel">Отмена</button><button class="btn" id="btn-map-confirm" style="margin-top:0;" data-i18n="btnConfirm">Подтвердить</button></div>
 </div></div>
 
+<!-- МОДАЛКА SMS -->
+<div class="modal-overlay" id="modal-sms"><div class="modal sms-modal">
+  <div class="modal-title" id="sms-title" data-i18n="smsTitle">Код подтверждения</div>
+  <div class="modal-sub sms-sub" id="sms-sub"></div>
+  <div class="sms-code-wrap" id="sms-code-wrap">
+    <input type="tel" class="sms-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
+    <input type="tel" class="sms-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
+    <input type="tel" class="sms-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
+    <input type="tel" class="sms-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
+    <input type="tel" class="sms-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
+    <input type="tel" class="sms-input" maxlength="1" inputmode="numeric" pattern="[0-9]">
+  </div>
+  <div class="sms-timer" id="sms-timer"></div>
+  <div class="sms-actions">
+    <button class="btn btn-ghost" id="btn-sms-cancel" data-i18n="btnCancel">Отмена</button>
+    <button class="btn" id="btn-sms-confirm" data-i18n="smsConfirm">Подтвердить</button>
+  </div>
+</div></div>
+
 <input type="file" id="file-camera" accept="image/*" capture="user" style="display:none;">
 <input type="file" id="file-gallery" accept="image/*" style="display:none;">
 <input type="file" id="file-doc" accept="image/*" style="display:none;">
@@ -807,10 +838,6 @@ svg { stroke-linecap:round; stroke-linejoin:round; }
 // КОНФИГ
 // ============================================================
 const RULES_VERSION = '2026-10-13';
-
-// ВАЖНО: НЕ храните ключ в клиентском коде — его видит любой посетитель.
-// Оставьте пустым: сайт использует локальную проверку анкеты.
-// Для ИИ-проверки вынесите вызов на свой сервер/Cloud Function, а ключ храните там.
 const AI_CONFIG = { baseUrl: 'https://api.groq.com/openai/v1', apiKey: '', model: 'openai/gpt-oss-20b', maxTokens: 1500 };
 
 // ============================================================
@@ -857,7 +884,7 @@ const I18N = {
   formStep1Title:'Личные данные', formStep1Sub:'Заполните как в удостоверении личности', formStep2Title:'Документы водителя', formStep2Sub:'Загрузите чёткие фото документов',
   formStep3Title:'Данные автомобиля', formStep3Sub:'Информация о вашем транспортном средстве', formStep4Title:'Документы автомобиля', formStep4Sub:'Техпаспорт и страховка',
   formStep5Title:'Фотографии автомобиля', formStep5Sub:'Сделайте несколько снимков с разных ракурсов',
-  formFullname:'ФИО полностью', formBirthdate:'Дата рождения', formIIN:'ИИН', formEmail:'Email', formPhone:'Телефон (подтверждение по SMS)',
+  formFullname:'ФИО полностью', formBirthdate:'Дата рождения', formIIN:'ИИН', formEmail:'Email', formPhoneDriver:'Телефон',
   formSelfie:'Селфи без очков и головных уборов', formSelfieHint:'Лицо хорошо видно, без очков',
   formLicenseFront:'Водительское удостоверение — лицевая сторона', formLicenseBack:'Водительское удостоверение — оборотная сторона',
   formLicenseSelfie:'Селфи с правами в руках', formLicenseSelfieHint:'Держите права рядом с лицом', formIDCard:'Удостоверение личности / Паспорт',
@@ -871,6 +898,20 @@ const I18N = {
   aiApprovedTitle:'Анкета одобрена!', aiApprovedText:'Предварительная проверка пройдена. Вы можете приступать к работе. Помните: вы отвечаете за соблюдение законодательства РК.',
   aiRejectedTitle:'Анкета отклонена', aiRejectedText:'Найдены проблемы в анкете. Исправьте их и отправьте снова.',
   aiGoToApp:'Начать работу', aiTryAgain:'Исправить анкету',
+  // SMS
+  smsTitle:'Код подтверждения',
+  smsSub:'Мы отправили 6-значный SMS-код на номер',
+  smsInputPlaceholder:'Введите 6-значный код',
+  smsConfirm:'Подтвердить',
+  smsResend:'Отправить код повторно',
+  smsResendTimer:'Повторный код через',
+  smsErrorInvalid:'Неверный код. Попробуйте ещё раз.',
+  smsErrorExpired:'Код истёк. Запросите новый.',
+  smsErrorFirebase:'Ошибка отправки. Проверьте номер и подключение.',
+  smsResent:'Код отправлен повторно',
+  smsPhoneMissing:'Сначала введите номер телефона',
+  smsSending:'Отправляем код...',
+  smsVerifying:'Проверяем код...',
   rules: [
    {t:'Общие положения', i:[
     'КЕТТІКGO — информационный сервис, который помогает пассажирам и водителям находить друг друга. Условия поездки согласуются между ними в соответствии с законодательством Республики Казахстан.',
@@ -945,7 +986,7 @@ const I18N = {
   formStep1Title:'Жеке деректер', formStep1Sub:'Жеке куәліктегідей толтырыңыз', formStep2Title:'Жүргізуші құжаттары', formStep2Sub:'Құжаттардың анық фотосын жүктеңіз',
   formStep3Title:'Көлік деректері', formStep3Sub:'Көлік туралы ақпарат', formStep4Title:'Көлік құжаттары', formStep4Sub:'Техпаспорт және сақтандыру',
   formStep5Title:'Көлік фотолары', formStep5Sub:'Әртүрлі ракурстан бірнеше фото',
-  formFullname:'Толық аты-жөні', formBirthdate:'Туған күні', formIIN:'ЖСН', formEmail:'Email', formPhone:'Телефон (SMS растау)',
+  formFullname:'Толық аты-жөні', formBirthdate:'Туған күні', formIIN:'ЖСН', formEmail:'Email', formPhoneDriver:'Телефон нөмірі',
   formSelfie:'Көзілдірік пен бас киімсіз селфи', formSelfieHint:'Бет анық көрінеді',
   formLicenseFront:'Жүргізуші куәлігі — алдыңғы жағы', formLicenseBack:'Жүргізуші куәлігі — артқы жағы',
   formLicenseSelfie:'Құжатты ұстап селфи', formLicenseSelfieHint:'Куәлікті бетіңізге жақын ұстаңыз', formIDCard:'Жеке куәлік / Паспорт',
@@ -959,6 +1000,20 @@ const I18N = {
   aiApprovedTitle:'Анкета мақұлданды!', aiApprovedText:'Алдын ала тексеру сәтті өтті. Жұмысқа кірісе аласыз. Есіңізде болсын: ҚР заңнамасын сақтау үшін өзіңіз жауаптысыз.',
   aiRejectedTitle:'Анкета қабылданбады', aiRejectedText:'Анкетада ақаулар табылды. Түзетіп, қайта жіберіңіз.',
   aiGoToApp:'Жұмысты бастау', aiTryAgain:'Анкетаны түзету',
+  // SMS
+  smsTitle:'Растау коды',
+  smsSub:'Біз нөмірге 6 таңбалы SMS-код жібердік',
+  smsInputPlaceholder:'6 таңбалы кодты енгізіңіз',
+  smsConfirm:'Растау',
+  smsResend:'Кодты қайта жіберу',
+  smsResendTimer:'Қайта жіберу:',
+  smsErrorInvalid:'Қате код. Қайта көріңіз.',
+  smsErrorExpired:'Кодтың мерзімі бітті. Жаңасын сұраңыз.',
+  smsErrorFirebase:'Жіберу қатесі. Нөмір мен қосылымды тексеріңіз.',
+  smsResent:'Код қайта жіберілді',
+  smsPhoneMissing:'Алдымен телефон нөмірін енгізіңіз',
+  smsSending:'Код жіберілуде...',
+  smsVerifying:'Код тексерілуде...',
   rules: [
    {t:'Жалпы ережелер', i:[
     'КЕТТІКGO — жолаушылар мен жүргізушілердің бір-бірін табуына көмектесетін ақпараттық сервис. Сапар шарттары олардың арасында Қазақстан Республикасының заңнамасына сәйкес келісіледі.',
@@ -999,8 +1054,6 @@ let currentLang = 'ru';
 const t = k => I18N[currentLang][k] ?? k;
 const $ = id => document.getElementById(id);
 
-// Буквы «перетекают» из одного языка в другой: случайные глифы целевого алфавита
-// постепенно, слева направо, превращаются в итоговый текст.
 function morphText(el, to) {
   const from = el.textContent;
   if (from === to) return;
@@ -1031,6 +1084,12 @@ function applyLang(lang) {
   morphText(toggleMode, state.isLogin ? t('toggleRegister') : t('toggleLogin'));
   if (state.role) { roleLabel.textContent = state.role === 'driver' ? t('roleDriverLabel') : t('rolePassengerLabel'); settingsRole.textContent = roleLabel.textContent; renderCurrentRole(); }
   renderRules();
+  // SMS modal texts
+  $('sms-title').textContent = t('smsTitle');
+  $('sms-sub').textContent = t('smsSub').replace('{phone}', state.pendingPhone || '');
+  document.querySelectorAll('.sms-input').forEach(inp => inp.placeholder = '');
+  $('btn-sms-confirm').textContent = t('smsConfirm');
+  updateResendUI();
 }
 document.querySelectorAll('.lang-btn').forEach(btn => btn.addEventListener('click', () => {
   document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); applyLang(btn.dataset.lang);
@@ -1041,6 +1100,8 @@ document.querySelectorAll('.lang-btn').forEach(btn => btn.addEventListener('clic
 // ============================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, push, set, onValue, remove, update, off } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
 const firebaseConfig = {
   apiKey: "AIzaSyDkAlQ295XNbobRWMSnxIweTOrT1i3z_iA", authDomain: "vtaxi-9bf65.firebaseapp.com",
   databaseURL: "https://vtaxi-9bf65-default-rtdb.europe-west1.firebasedatabase.app", projectId: "vtaxi-9bf65",
@@ -1049,6 +1110,8 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const auth = getAuth(app);
+auth.useDeviceLanguage();
 
 // ============================================================
 // СОСТОЯНИЕ
@@ -1058,7 +1121,14 @@ const state = {
   fullname:'', phone:'', mail:'', photo:'', role:null, hasCar:null, location:'', lat:null, lng:null, isLogin:false,
   activeOrderId:null, activePassengerOrderId:null, ordersListener:null, driverOrdersListener:null,
   ordersMapActive:false, ordersMapRadius:50, ordersMapMarkers:[], allOrders:[],
-  driverData: emptyDriver(), driverFormStep:1, rulesRead:false, consentAt:null
+  driverData: emptyDriver(), driverFormStep:1, rulesRead:false, consentAt:null,
+  // SMS auth
+  confirmationResult: null,
+  pendingPhone: '',
+  smsPurpose: 'passenger', // 'passenger' | 'driver'
+  smsTimerInterval: null,
+  smsResendAvailableAt: 0,
+  isVerifying: false
 };
 
 // ============================================================
@@ -1069,10 +1139,14 @@ const fullnameInput=$('fullname'), phoneInput=$('phone'), btnReg=$('btn-reg'), t
 const roleLabel=$('role-label'), displayName=$('display-name'), displayLoc=$('display-location'), contentArea=$('content-area'), manualAddressInput=$('manual-address');
 const settingsRole=$('settingsRole'), settingsName=$('settingsName'), settingsNameValue=$('settingsNameValue'), settingsPhoneValue=$('settingsPhoneValue'), settingsMailValue=$('settingsMailValue');
 const modalEdit=$('modal-edit'), editTitle=$('edit-title'), editSub=$('edit-sub'), editLabel=$('edit-label'), editInput=$('edit-input');
-const modalPhoto=$('modal-photo'), modalPrice=$('modal-price'), modalMap=$('modal-map'), modalRules=$('modal-rules'), modalSos=$('modal-sos');
+const modalPhoto=$('modal-photo'), modalPrice=$('modal-price'), modalMap=$('modal-map'), modalRules=$('modal-rules'), modalSos=$('modal-sos'), modalSms=$('modal-sms');
 const mapSearch=$('map-search'), mapSuggestions=$('map-suggestions'), mapHint=$('map-hint'), chosenLocWrap=$('chosen-location-wrap');
 const ordersMapHeader=$('orders-map-header'), ordersCount=$('orders-count'), radiusSlider=$('radius-slider'), radiusValue=$('radius-value'), btnOrdersMap=$('btn-orders-map'), orderPopup=$('order-popup');
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const smsInputs = document.querySelectorAll('.sms-input');
+const smsTimerEl = $('sms-timer');
+const btnSmsConfirm = $('btn-sms-confirm');
+const btnSmsCancel = $('btn-sms-cancel');
 
 // ============================================================
 // УТИЛИТЫ
@@ -1094,11 +1168,9 @@ function toast(msg, bad) { const el = document.createElement('div'); el.classNam
 function errShake(el) { el.classList.remove('err'); void el.offsetWidth; el.classList.add('err'); setTimeout(() => el.classList.remove('err'), 1500); }
 function countUp(el, to) { const from = parseInt(el.textContent) || 0; if (reduceMotion || from === to) { el.textContent = to; return; } const t0 = performance.now(); (function s(n){ const p=Math.min((n-t0)/500,1); el.textContent = Math.round(from+(to-from)*(1-Math.pow(1-p,3))); if(p<1) requestAnimationFrame(s); })(t0); }
 
-// Проверка ИИН РК: контрольная цифра + дата рождения
 function validateIIN(iin, birthdate) {
   if (!/^\d{12}$/.test(iin)) return false;
   const d = iin.split('').map(Number);
-  // вторая схема весов (если первая даёт 10): 3,4,5,6,7,8,9,10,11,1,2
   const w2 = [3,4,5,6,7,8,9,10,11,1,2];
   let s1 = d.slice(0, 11).reduce((a, v, i) => a + v * (i + 1), 0) % 11;
   if (s1 === 10) s1 = d.slice(0, 11).reduce((a, v, i) => a + v * w2[i], 0) % 11;
@@ -1127,7 +1199,7 @@ document.querySelectorAll('[data-theme-set]').forEach(b => b.addEventListener('c
 syncThemeUI(document.documentElement.dataset.theme);
 
 // ============================================================
-// ЭФФЕКТЫ: сплэш, ripple, tilt, курсор, confetti
+// ЭФФЕКТЫ
 // ============================================================
 (function splash() {
   const wrap = $('splash-logo'); const txt = 'КЕТТІК';
@@ -1199,7 +1271,6 @@ $('open-rules').addEventListener('click', e => { e.preventDefault(); e.stopPropa
 $('chk-rules').addEventListener('click', e => { if (!state.rulesRead) { e.preventDefault(); openRules('accept'); } });
 modalRules.addEventListener('click', e => { if (e.target === modalRules) modalRules.classList.remove('active'); });
 
-// SOS
 $('btn-sos').addEventListener('click', () => modalSos.classList.add('active'));
 $('btn-sos-close').addEventListener('click', () => modalSos.classList.remove('active'));
 modalSos.addEventListener('click', e => { if (e.target === modalSos) modalSos.classList.remove('active'); });
@@ -1324,12 +1395,183 @@ function publishDriver() {
 function goOffline() { if (state.fullname) remove(ref(db, 'drivers/' + profileKey())).catch(() => {}); }
 
 // ============================================================
+// SMS АУТЕНТИФИКАЦИЯ
+// ============================================================
+function initRecaptcha() {
+  if (!window.recaptchaVerifier) {
+    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+      size: 'invisible',
+      callback: () => {},
+      'expired-callback': () => {}
+    });
+  }
+}
+// Невидимый контейнер для reCAPTCHA (добавим динамически)
+const recaptchaContainer = document.createElement('div');
+recaptchaContainer.id = 'recaptcha-container';
+recaptchaContainer.style.display = 'none';
+document.body.appendChild(recaptchaContainer);
+initRecaptcha();
+
+function openSmsModal(purpose, phone) {
+  state.smsPurpose = purpose;
+  state.pendingPhone = phone;
+  state.isVerifying = false;
+  smsInputs.forEach(inp => { inp.value = ''; inp.classList.remove('filled', 'error'); });
+  $('sms-sub').textContent = t('smsSub').replace('{phone}', phone);
+  $('btn-sms-confirm').textContent = t('smsConfirm');
+  startSmsTimer(60);
+  modalSms.classList.add('active');
+  setTimeout(() => smsInputs[0].focus(), 200);
+}
+
+function startSmsTimer(seconds) {
+  clearInterval(state.smsTimerInterval);
+  state.smsResendAvailableAt = Date.now() + seconds * 1000;
+  updateResendUI();
+  state.smsTimerInterval = setInterval(() => {
+    if (Date.now() >= state.smsResendAvailableAt) {
+      clearInterval(state.smsTimerInterval);
+      state.smsTimerInterval = null;
+    }
+    updateResendUI();
+  }, 1000);
+}
+
+function updateResendUI() {
+  const remaining = Math.max(0, Math.ceil((state.smsResendAvailableAt - Date.now()) / 1000));
+  if (remaining > 0) {
+    const mm = String(Math.floor(remaining / 60)).padStart(2, '0');
+    const ss = String(remaining % 60).padStart(2, '0');
+    smsTimerEl.innerHTML = `${t('smsResendTimer')} <b>${mm}:${ss}</b>`;
+  } else {
+    smsTimerEl.innerHTML = `<span class="sms-resend" id="sms-resend">${t('smsResend')}</span>`;
+    const resendEl = $('sms-resend');
+    if (resendEl) resendEl.addEventListener('click', () => resendSmsCode());
+  }
+}
+
+async function sendSmsCode(phone, purpose) {
+  initRecaptcha();
+  const appVerifier = window.recaptchaVerifier;
+  try {
+    const confirmationResult = await signInWithPhoneNumber(auth, phone, appVerifier);
+    state.confirmationResult = confirmationResult;
+    openSmsModal(purpose, phone);
+  } catch (err) {
+    console.error('SMS send error:', err);
+    toast(t('smsErrorFirebase') + ' ' + (err.message || ''), true);
+  }
+}
+
+async function resendSmsCode() {
+  if (Date.now() < state.smsResendAvailableAt) return;
+  if (!state.pendingPhone) { toast(t('smsPhoneMissing'), true); return; }
+  smsInputs.forEach(inp => { inp.value = ''; inp.classList.remove('filled', 'error'); });
+  await sendSmsCode(state.pendingPhone, state.smsPurpose);
+  toast(t('smsResent'));
+}
+
+async function verifySmsCode() {
+  const code = [...smsInputs].map(i => i.value).join('');
+  if (code.length !== 6) {
+    smsInputs.forEach(i => i.classList.add('error'));
+    toast(t('smsErrorInvalid'), true);
+    setTimeout(() => smsInputs.forEach(i => i.classList.remove('error')), 600);
+    return;
+  }
+  if (!state.confirmationResult) {
+    toast(t('smsErrorExpired'), true);
+    return;
+  }
+  state.isVerifying = true;
+  btnSmsConfirm.disabled = true;
+  btnSmsConfirm.textContent = t('smsVerifying');
+  try {
+    await state.confirmationResult.confirm(code);
+    // Успех
+    modalSms.classList.remove('active');
+    clearInterval(state.smsTimerInterval);
+    state.smsTimerInterval = null;
+    state.confirmationResult = null;
+    const phone = state.pendingPhone;
+    state.phone = phone;
+    if (state.smsPurpose === 'driver') {
+      // Продолжаем анкету водителя: Шаг 2
+      state.driverFormStep = 2;
+      updateDriverFormStep();
+      toast('SMS подтверждён');
+    } else {
+      // Продолжаем регистрацию пассажира
+      continuePassengerRegistration();
+    }
+  } catch (err) {
+    console.error('SMS verify error:', err);
+    smsInputs.forEach(i => i.classList.add('error'));
+    toast(t('smsErrorInvalid'), true);
+    setTimeout(() => smsInputs.forEach(i => i.classList.remove('error')), 600);
+  } finally {
+    state.isVerifying = false;
+    btnSmsConfirm.disabled = false;
+    btnSmsConfirm.textContent = t('smsConfirm');
+  }
+}
+
+// Обработка ввода в SMS-полях
+smsInputs.forEach((inp, idx) => {
+  inp.addEventListener('input', e => {
+    const v = e.target.value.replace(/\D/g, '');
+    e.target.value = v.slice(-1);
+    if (e.target.value) {
+      e.target.classList.add('filled');
+      if (idx < smsInputs.length - 1) smsInputs[idx + 1].focus();
+    } else {
+      e.target.classList.remove('filled');
+    }
+  });
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Backspace' && !e.target.value && idx > 0) {
+      smsInputs[idx - 1].focus();
+      smsInputs[idx - 1].value = '';
+      smsInputs[idx - 1].classList.remove('filled');
+    }
+    if (e.key === 'Enter') verifySmsCode();
+  });
+  inp.addEventListener('paste', e => {
+    e.preventDefault();
+    const data = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
+    data.split('').forEach((ch, i) => { if (smsInputs[i]) { smsInputs[i].value = ch; smsInputs[i].classList.add('filled'); } });
+    const next = Math.min(data.length, smsInputs.length - 1);
+    smsInputs[next].focus();
+  });
+});
+
+btnSmsConfirm.addEventListener('click', verifySmsCode);
+btnSmsCancel.addEventListener('click', () => {
+  modalSms.classList.remove('active');
+  clearInterval(state.smsTimerInterval);
+  state.smsTimerInterval = null;
+  state.confirmationResult = null;
+});
+modalSms.addEventListener('click', e => { if (e.target === modalSms) { modalSms.classList.remove('active'); clearInterval(state.smsTimerInterval); state.smsTimerInterval = null; state.confirmationResult = null; } });
+
+// Продолжение регистрации пассажира после SMS
+function continuePassengerRegistration() {
+  const fullname = fullnameInput.value.trim();
+  state.fullname = fullname;
+  state.consentAt = Date.now();
+  if (!state.mail) state.mail = state.phone.replace(/\D/g, '') + '@kettikgo.kz';
+  displayName.textContent = fullname;
+  saveProfileToFirebase();
+  showScreen('role');
+}
+
+// ============================================================
 // ПРОВЕРКА АНКЕТЫ: ИИ (если настроен) + локальная
 // ============================================================
 async function aiValidateDriverForm() {
   if (!AI_CONFIG.apiKey) return localValidateDriverForm();
   const d = state.driverData;
-  // Минимум данных: без ИИН, телефона, email и самих фото
   const prompt = `Ты — модератор сервиса поездок. Оцени реалистичность анкеты водителя. Ответь JSON: {"approved":bool,"score":0-100,"issues":[string],"summary":string}.
 ФИО: ${d.fullname}; год рождения: ${(d.birthdate||'').slice(0,4)}; авто: ${d.carBrand}, цвет ${d.carColor}, номер ${d.carPlate}, год ${d.carYear};
 ИИН валиден: ${validateIIN(d.iin, d.birthdate) ? 'да' : 'нет'}; загружены фото: ${['selfie','licenseFront','licenseBack','licenseSelfie','idCard','techFront','techBack','insurance','carFront','carSide','carBack','carInterior'].every(k => d[k]) ? 'все обязательные' : 'не все'}.`;
@@ -1340,7 +1582,6 @@ async function aiValidateDriverForm() {
     clearTimeout(to); if (!res.ok) return localValidateDriverForm();
     const content = (await res.json()).choices?.[0]?.message?.content; const r = JSON.parse(content);
     const local = localValidateDriverForm();
-    // Решение принимают оба: ИИ не может «одобрить» то, что не прошло локальные правила
     const approved = !!r.approved && local.approved;
     return { approved, score: r.score ?? local.score, issues: [...new Set([...(r.issues || []), ...local.issues])], summary: r.summary || local.summary, source: 'ai' };
   } catch (e) { clearTimeout(to); return localValidateDriverForm(); }
@@ -1417,7 +1658,13 @@ function validateStep3() {
   const f = { carBrand:'form-car-brand', carColor:'form-car-color', carPlate:'form-car-plate', carYear:'form-car-year' };
   for (const [k, id] of Object.entries(f)) { const v = $(id).value.trim(); if (!v) { errShake($(id)); return false; } state.driverData[k] = v; } return true;
 }
-$('btn-form-next-1').addEventListener('click', () => { if (validateStep1()) { state.driverFormStep = 2; updateDriverFormStep(); } });
+$('btn-form-next-1').addEventListener('click', async () => {
+  if (!validateStep1()) return;
+  const phone = $('form-phone').value.trim();
+  if (phone.replace(/\D/g, '').length < 11) { errShake($('form-phone')); return; }
+  state.driverData.phone = phone;
+  await sendSmsCode(phone, 'driver');
+});
 $('btn-form-back-1').addEventListener('click', () => showScreen('role'));
 $('btn-form-next-2').addEventListener('click', () => { if (needPhotos(['selfie','licenseFront','licenseBack','licenseSelfie','idCard'])) { state.driverFormStep = 3; updateDriverFormStep(); } });
 $('btn-form-back-2').addEventListener('click', () => { state.driverFormStep = 1; updateDriverFormStep(); });
@@ -1486,7 +1733,7 @@ radiusSlider.addEventListener('input', e => { state.ordersMapRadius = +e.target.
 btnOrdersMap.addEventListener('click', () => state.ordersMapActive ? closeOrdersMap() : openOrdersMap());
 
 // ============================================================
-// КАРТА В МОДАЛКЕ (выбор точки)
+// КАРТА В МОДАЛКЕ
 // ============================================================
 let map = null, pin = null, tempLoc = { lat: null, lng: null, address: '' };
 function openMapModal() { modalMap.classList.add('active'); setTimeout(initMap, 60); }
@@ -1636,9 +1883,9 @@ function renderCurrentRole() {
 }
 
 // ============================================================
-// РЕГИСТРАЦИЯ / ВХОД
+// РЕГИСТРАЦИЯ / ВХОД (с SMS)
 // ============================================================
-btnReg.addEventListener('click', () => {
+btnReg.addEventListener('click', async () => {
   const fullname = fullnameInput.value.trim(), phone = phoneInput.value.trim();
   if (!fullname) { fullnameInput.focus(); return errShake(fullnameInput); }
   if (phone.replace(/\D/g, '').length < 11) { phoneInput.focus(); return errShake(phoneInput); }
@@ -1646,9 +1893,9 @@ btnReg.addEventListener('click', () => {
   if (!state.rulesRead) { toast(t('needRulesRead'), true); $('chk-rules-wrap').classList.add('pulse'); setTimeout(() => $('chk-rules-wrap').classList.remove('pulse'), 600); openRules('accept'); return; }
   const all = ['chk-rules', 'chk-pd', 'chk-age'].map(id => $(id));
   if (!all.every(c => c.checked)) { toast(t('needConsent'), true); all.forEach(c => { if (!c.checked) { const w = c.closest('.check'); w.classList.add('pulse'); setTimeout(() => w.classList.remove('pulse'), 600); } }); return; }
-  state.fullname = fullname; state.phone = phone; state.consentAt = Date.now();
-  if (!state.mail) state.mail = phone.replace(/\D/g, '') + '@kettikgo.kz';
-  displayName.textContent = fullname; saveProfileToFirebase(); showScreen('role');
+
+  // SMS отправка
+  await sendSmsCode(phone, 'passenger');
 });
 toggleMode.addEventListener('click', () => { state.isLogin = !state.isLogin; btnReg.textContent = state.isLogin ? t('btnLogin') : t('btnContinue'); toggleMode.textContent = state.isLogin ? t('toggleRegister') : t('toggleLogin'); });
 fullnameInput.addEventListener('keydown', e => { if (e.key === 'Enter') phoneInput.focus(); });
@@ -1704,13 +1951,14 @@ modalPhoto.addEventListener('click', e => { if (e.target === modalPhoto) modalPh
 function logout() {
   goOffline();
   if (state.driverOrdersListener) off(ref(db, 'orders'), 'value', state.driverOrdersListener);
-  Object.assign(state, { driverOrdersListener: null, ordersListener: null, activeOrderId: null, activePassengerOrderId: null, fullname: '', phone: '', mail: '', photo: '', role: null, hasCar: null, location: '', lat: null, lng: null, ordersMapActive: false, allOrders: [], driverData: emptyDriver(), driverFormStep: 1, isLogin: false, rulesRead: false, consentAt: null });
+  Object.assign(state, { driverOrdersListener: null, ordersListener: null, activeOrderId: null, activePassengerOrderId: null, fullname: '', phone: '', mail: '', photo: '', role: null, hasCar: null, location: '', lat: null, lng: null, ordersMapActive: false, allOrders: [], driverData: emptyDriver(), driverFormStep: 1, isLogin: false, rulesRead: false, consentAt: null, confirmationResult: null, pendingPhone: '', smsPurpose: 'passenger' });
   fullnameInput.value = phoneInput.value = manualAddressInput.value = ''; ['chk-rules','chk-pd','chk-age','chk-drv','chk-drv-pd'].forEach(id => $(id).checked = false);
   displayLoc.textContent = t('locDetecting');
   document.querySelectorAll('.photo-upload.has-photo').forEach(el => { el.classList.remove('has-photo'); el.innerHTML = photoPlaceholders.get(el.dataset.photo) || ''; });
   btnReg.textContent = t('btnContinue'); toggleMode.textContent = t('toggleLogin');
   updateAllAvatars(); clearRoute(); clearOrdersMapMarkers(); ordersMapHeader.style.display = 'none'; btnOrdersMap.style.display = 'none'; orderPopup.style.display = 'none'; showBgMap(false);
   if (bgMarker && bgMap) { bgMap.removeLayer(bgMarker); bgMarker = null; }
+  clearInterval(state.smsTimerInterval); state.smsTimerInterval = null;
   showScreen('reg');
 }
 $('btn-logout').addEventListener('click', logout);
