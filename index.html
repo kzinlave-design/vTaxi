@@ -7,12 +7,10 @@
 <title>КЕТТІКGO — сервис поездок</title>
 <script>
   try { var th = localStorage.getItem('kettikgo-theme'); if (th === 'dark' || th === 'light') document.documentElement.setAttribute('data-theme', th); } catch (e) {}
-  // Профиль производительности: выставляем класс ДО отрисовки, чтобы тяжёлые эффекты не стартовали
   (function(){
     var low = false;
     try {
       var cores = navigator.hardwareConcurrency || 4;
-      var mem = navigator.deviceMemory || navigator.deviceMemory === 0 ? navigator.deviceMemory : (navigator.deviceMemory || 4);
       var dm = (typeof navigator.deviceMemory === 'number') ? navigator.deviceMemory : 4;
       var conn = navigator.connection || {};
       var saveData = !!conn.saveData;
@@ -109,7 +107,6 @@ svg { stroke-linecap:round; stroke-linejoin:round; }
 .leaflet-control-attribution a { color:var(--text) !important; }
 @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
 
-/* Экономия ресурсов на слабых устройствах */
 .perf-low .bg-grid, .perf-low .bg-car, .perf-low .bg-road, .perf-low .cursor-glow, .perf-low .shape-3, .perf-low .shape-4 { display:none !important; }
 .perf-low .shape { filter:none; animation-duration:40s; }
 .perf-low .bottom-sheet, .perf-low .brand-pill, .perf-low .pill-box, .perf-low .order-popup, .perf-low .orders-map-header { backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
@@ -121,8 +118,8 @@ svg { stroke-linecap:round; stroke-linejoin:round; }
 /* ============================================================
    СПЛЭШ
    ============================================================ */
-#splash { position:fixed; inset:0; z-index:5000; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:26px; transition:opacity .6s ease, transform .8s cubic-bezier(.7,0,.2,1); }
-#splash.hide { opacity:0; transform:scale(1.15); pointer-events:none; }
+#splash, #splash-reg { position:fixed; inset:0; z-index:5000; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:26px; transition:opacity .6s ease, transform .8s cubic-bezier(.7,0,.2,1); }
+#splash.hide, #splash-reg.hide { opacity:0; transform:scale(1.15); pointer-events:none; }
 .splash-logo { font-family:'Unbounded',sans-serif; font-weight:800; font-size:clamp(1.8rem,8vw,3rem); letter-spacing:-1px; display:flex; align-items:center; }
 .splash-logo .ch { display:inline-block; opacity:0; transform:translateY(30px) rotate(8deg); animation:chIn .6s cubic-bezier(.22,1,.36,1) forwards; }
 .splash-logo .go { background:var(--btn); color:var(--btn-text); border-radius:12px; padding:0 .25em; margin-left:.12em; }
@@ -174,6 +171,30 @@ svg { stroke-linecap:round; stroke-linejoin:round; }
 .screen.active .bottom-sheet > * { animation:rise .6s cubic-bezier(.22,1,.36,1) both; animation-delay:calc(var(--i,0) * 55ms + 100ms); }
 @keyframes rise { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:none; } }
 .sheet-handle { width:44px; height:5px; border-radius:100px; background:var(--border-2); margin:0 auto 16px; }
+
+/* ЭКРАН РОЛИ — НА ВЕСЬ ЭКРАН */
+#screen-role .bottom-sheet {
+  position:absolute; inset:0; max-width:none; width:100%; height:100%;
+  border-radius:0; border:none; padding:70px 22px calc(26px + env(safe-area-inset-bottom));
+  display:flex; flex-direction:column; justify-content:center; align-items:center;
+  background:var(--sheet); backdrop-filter:blur(32px) saturate(160%); -webkit-backdrop-filter:blur(32px) saturate(160%);
+  animation:fadeIn .5s ease; max-height:none;
+}
+#screen-role .sheet-handle { display:none; }
+#screen-role .role-inner { width:100%; max-width:560px; }
+#screen-role .role-grid { grid-template-columns:1fr; gap:16px; margin-bottom:22px; }
+#screen-role .role-card { padding:14px; border-radius:28px; }
+#screen-role .role-scene { height:190px; border-radius:22px; }
+#screen-role .role-body { padding:4px 12px 10px; }
+#screen-role .role-name { font-size:1.15rem; }
+#screen-role .role-hint { font-size:.78rem; }
+#screen-role .role-arrow { width:44px; height:44px; }
+#screen-role .role-arrow svg { width:20px; height:20px; }
+
+@media (min-width:520px) {
+  #screen-role .role-grid { grid-template-columns:1fr 1fr; }
+  #screen-role .role-scene { height:200px; }
+}
 
 /* ЛОГО */
 .logo-wrap { text-align:center; margin-bottom:6px; }
@@ -254,32 +275,18 @@ svg { stroke-linecap:round; stroke-linejoin:round; }
 .role-title { font-family:'Unbounded',sans-serif; font-size:1.5rem; font-weight:700; text-align:center; margin-bottom:4px; letter-spacing:-.5px; }
 .role-desc { text-align:center; font-size:.85rem; color:var(--text-2); margin-bottom:22px; }
 .role-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:18px; perspective:900px; }
-.role-card { background:var(--card); border:1.5px solid var(--border); border-radius:24px; padding:8px; cursor:pointer; text-align:left; transition:border-color .3s, box-shadow .4s, background .3s, transform .15s ease-out; transform-style:preserve-3d; will-change:transform; position:relative; overflow:hidden; display:flex; flex-direction:column; gap:10px; }
+.role-card { background:var(--card); border:1.5px solid var(--border); border-radius:24px; padding:8px; cursor:pointer; text-align:left; transition:border-color .3s, box-shadow .4s, background .3s, transform .15s ease-out; will-change:transform; position:relative; overflow:hidden; display:flex; flex-direction:column; gap:10px; }
 .role-card:hover { border-color:var(--text); background:var(--card-h); box-shadow:0 24px 40px -20px var(--btn-shadow); }
 .role-card::before { content:''; position:absolute; top:0; bottom:0; width:45%; left:-70%; background:linear-gradient(100deg, transparent, var(--card-h), transparent); transform:skewX(-20deg); transition:left .8s ease; pointer-events:none; z-index:3; }
 .role-card:hover::before { left:130%; }
 .role-card:active { transform:scale(.97) !important; }
-.role-scene { position:relative; height:118px; border-radius:20px; background:var(--input); overflow:hidden; border:1px solid var(--border); color:var(--text); transform:translateZ(20px); }
+.role-scene { position:relative; height:118px; border-radius:20px; background:var(--input); overflow:hidden; border:1px solid var(--border); color:var(--text); }
 .role-body { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:2px 8px 6px; }
 .role-name { font-family:'Unbounded',sans-serif; font-size:.9rem; letter-spacing:-.3px; }
 .role-hint { font-size:.7rem; color:var(--text-2); margin-top:4px; }
 .role-arrow { width:36px; height:36px; border-radius:50%; background:var(--btn); display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:transform .45s cubic-bezier(.34,1.56,.64,1); }
 .role-arrow svg { width:17px; height:17px; stroke:var(--btn-text); stroke-width:2.2; fill:none; transition:transform .4s; }
 .role-card:hover .role-arrow { transform:scale(1.12) rotate(-45deg); }
-.rs-b { position:absolute; bottom:34px; width:22px; background:var(--border); border-radius:4px 4px 0 0; animation:bldMove 9s linear infinite; }
-.rs-b:nth-child(2n) { animation-duration:12s; opacity:.7; }
-@keyframes bldMove { from { transform:translateX(40px); } to { transform:translateX(-140px); } }
-.rs-road { position:absolute; left:0; right:0; bottom:33px; height:2px; background:repeating-linear-gradient(90deg, var(--border-2) 0 12px, transparent 12px 24px); animation:roadMove .9s linear infinite; }
-.rs-road::after { content:''; position:absolute; left:0; right:0; top:2px; height:34px; background:var(--border); opacity:.5; }
-.rs-car { position:absolute; bottom:31px; left:0; width:54px; animation:rsDrive 4.5s cubic-bezier(.45,0,.55,1) infinite; }
-.role-card:hover .rs-car { animation-duration:2.4s; }
-@keyframes rsDrive { from { transform:translateX(-70px); } to { transform:translateX(230px); } }
-.scene-pax { display:flex; align-items:center; justify-content:center; }
-.rs-ring { position:absolute; left:62%; top:46%; width:70px; height:70px; margin:-35px 0 0 -35px; border-radius:50%; border:2px solid var(--text); opacity:0; animation:radar 2.6s ease-out infinite; }
-.rs-ring.b { animation-delay:.85s; } .rs-ring.c { animation-delay:1.7s; }
-.rs-pin { position:absolute; left:62%; top:46%; width:38px; margin:-30px 0 0 -19px; animation:pinBounce 1.6s ease-in-out infinite; }
-.rs-man { position:absolute; bottom:12px; left:12%; width:30px; animation:manWalk 4.5s ease-in-out infinite; }
-@keyframes manWalk { 0%,100% { transform:translateX(0) rotate(-3deg); } 50% { transform:translateX(34px) rotate(3deg); } }
 
 /* ОЖИДАНИЕ */
 .wait-scene { display:flex; flex-direction:column; align-items:center; gap:8px; padding:18px 8px 8px; text-align:center; }
@@ -541,8 +548,97 @@ svg { stroke-linecap:round; stroke-linejoin:round; }
   .top-bar { top:12px; left:12px; right:140px; }
   .bottom-sheet { padding:10px 16px calc(22px + env(safe-area-inset-bottom)); border-radius:28px 28px 0 0; max-height:94vh; }
   .logo { font-size:1.8rem; } .orders-map-header { top:70px; left:12px; right:12px; } .orders-map-radius label { display:none; }
+  #screen-role .bottom-sheet { padding:60px 16px calc(22px + env(safe-area-inset-bottom)); }
+  #screen-role .role-scene { height:160px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; } }
+
+/* ============================================================
+   ОБНОВЛЕНИЕ: роли, заказ, офферы, производительность
+   ============================================================ */
+#splash-reg { animation:fadeIn .35s ease; }
+
+.role-grid { perspective:none; }
+.role-card { will-change:auto; opacity:1;
+  transition:transform .4s cubic-bezier(.22,1,.36,1), opacity .4s ease, border-color .3s, box-shadow .4s, background .3s; }
+.role-scene { contain:paint; }
+.screen.active .role-card { animation:rcIn .75s cubic-bezier(.22,1,.36,1) backwards; animation-delay:calc(var(--k,0) * 120ms + 220ms); }
+@keyframes rcIn { from { opacity:0; transform:translateY(28px) scale(.92); } to { opacity:1; transform:none; } }
+@media (hover:hover) { .role-card:hover { transform:translateY(-5px); } }
+.role-card:active { transform:scale(.97) !important; }
+.role-grid.has-pick .role-card { pointer-events:none; }
+.role-grid.has-pick .role-card:not(.picked) { opacity:.28; transform:scale(.92); }
+.role-card.picked { transform:scale(1.05); border-color:var(--text); box-shadow:0 26px 44px -18px var(--btn-shadow); }
+.role-card.picked .role-arrow { transform:scale(1.2) rotate(-45deg); }
+
+/* === НОВЫЕ СЦЕНЫ РОЛЕЙ === */
+.rv-drive, .rv-pax { color:var(--text); }
+
+/* Таксист — город, дорога, машина */
+.rv-sun { position:absolute; top:14px; right:16px; width:22px; height:22px; border-radius:50%; background:var(--border-2); animation:rvSun 5s ease-in-out infinite alternate; }
+@keyframes rvSun { to { transform:translateY(6px) scale(1.12); } }
+.rv-city { position:absolute; left:0; bottom:38px; width:200%; height:78px; display:flex; opacity:.18; animation:rvCity 16s linear infinite; }
+.rv-city svg { width:50%; height:100%; flex-shrink:0; }
+@keyframes rvCity { to { transform:translateX(-50%); } }
+.rv-roadbase { position:absolute; left:0; right:0; bottom:0; height:38px; background:var(--border); opacity:.55; }
+.rv-dash { position:absolute; left:0; bottom:17px; width:200%; height:3px; opacity:.7;
+  background:repeating-linear-gradient(90deg, var(--border-2) 0 18px, transparent 18px 36px); animation:rvDash .7s linear infinite; }
+@keyframes rvDash { to { transform:translateX(-36px); } }
+.rv-carwrap { position:absolute; left:50%; bottom:18px; width:92px; margin-left:-46px; animation:rvCarIn 1.1s cubic-bezier(.22,1,.36,1) backwards .5s; }
+@keyframes rvCarIn { from { transform:translateX(-150px); opacity:0; } to { transform:none; opacity:1; } }
+.rv-car { width:100%; display:block; animation:rvBob .45s ease-in-out infinite alternate; }
+@keyframes rvBob { to { transform:translateY(-1.6px); } }
+.rv-wheel { transform-box:fill-box; transform-origin:center; animation:rvSpin .55s linear infinite; }
+@keyframes rvSpin { to { transform:rotate(360deg); } }
+.role-card:hover .rv-dash { animation-duration:.35s; }
+.role-card:hover .rv-city { animation-duration:7s; }
+
+/* Пассажир — карта, метка, машина */
+.rv-map { position:absolute; inset:0; width:100%; height:100%; opacity:.9; }
+.rv-ring { position:absolute; left:62%; top:52%; width:64px; height:64px; margin:-32px 0 0 -32px; border-radius:50%; border:2px solid var(--text); opacity:0; animation:rvRing 2.6s ease-out infinite; }
+.rv-ring.r2 { animation-delay:1.3s; }
+@keyframes rvRing { 0% { transform:scale(.25); opacity:.7; } 100% { transform:scale(1.5); opacity:0; } }
+.rv-pin { position:absolute; left:62%; top:52%; width:40px; margin:-40px 0 0 -20px; animation:rvDrop 3.4s cubic-bezier(.34,1.56,.64,1) infinite; }
+@keyframes rvDrop { 0% { transform:translateY(-40px); opacity:0; } 14% { transform:translateY(0); opacity:1; } 100% { transform:translateY(0); opacity:1; } }
+.rv-cardot { position:absolute; left:6px; bottom:16px; width:56px; animation:rvArrive 5.2s ease-in-out infinite; }
+@keyframes rvArrive { 0% { transform:translateX(-60px); opacity:0; } 12% { opacity:1; } 62%,86% { transform:translateX(60px); opacity:1; } 100% { transform:translateX(60px); opacity:0; } }
+
+/* --- Заказ: цена, оплата, офферы --- */
+.stepper { display:flex; align-items:center; gap:8px; }
+.stepper .field-input { text-align:center; font-weight:800; font-size:1.15rem; padding:12px 8px; }
+.step-btn { width:48px; height:48px; flex-shrink:0; border-radius:14px; border:1px solid var(--border); background:var(--ghost); color:var(--text); font-size:1.4rem; font-weight:800; cursor:pointer; transition:transform .2s, background .3s; }
+.step-btn:active { transform:scale(.88); }
+.chips-row { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+.seg2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.seg2 button { padding:12px 8px; border-radius:14px; border:1.5px solid var(--border); background:var(--card); color:var(--text); font-weight:700; font-size:.84rem; cursor:pointer; transition:background .25s, color .25s, border-color .25s, transform .2s; }
+.seg2 button.active { background:var(--btn); color:var(--btn-text); border-color:var(--btn); }
+.seg2 button:active { transform:scale(.96); }
+.legal-note, .legal-foot { font-size:.66rem; line-height:1.45; color:var(--text-3); }
+.legal-note { margin-top:12px; padding:0 4px; }
+.legal-foot { text-align:center; margin-top:14px; padding:0 6px; }
+.offer { display:flex; align-items:center; gap:12px; padding:12px; background:var(--card); border:1px solid var(--border); border-radius:18px; margin-bottom:8px; animation:orderIn .45s cubic-bezier(.22,1,.36,1) backwards; }
+.offer-av { width:48px; height:48px; border-radius:50%; overflow:hidden; border:2px solid var(--border-2); background:var(--input); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.offer-av img { width:100%; height:100%; object-fit:cover; }
+.offer-av svg { width:22px; height:22px; stroke:var(--text-2); stroke-width:1.7; fill:none; }
+.offer-info { flex:1; min-width:0; }
+.offer-name { font-size:.9rem; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.offer-sub { font-size:.7rem; color:var(--text-2); font-weight:600; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.offer-r { display:flex; flex-direction:column; align-items:flex-end; flex-shrink:0; }
+.offer-btn { width:auto !important; margin-top:6px !important; padding:8px 14px !important; font-size:.76rem !important; border-radius:12px !important; }
+.plate-big { font-family:'Unbounded',sans-serif; font-size:1rem; letter-spacing:1px; text-align:center; padding:10px; margin-bottom:12px; background:var(--input); border:2px solid var(--border-2); border-radius:14px; }
+.safe-note { font-size:.74rem; font-weight:700; color:var(--text-2); text-align:center; margin-bottom:6px; }
+.btn-sos-mini { background:var(--bad-soft); color:var(--bad); border:1px solid var(--bad); box-shadow:none; }
+.star.on svg { fill:var(--warn); }
+
+/* --- Производительность --- */
+.paused *, .paused *::before, .paused *::after { animation-play-state:paused !important; }
+.map-on .bg-grid, .map-on .shape, .map-on .bg-car, .map-on .bg-road, .map-on .cursor-glow { display:none !important; }
+.perf-low .brand-dot, .perf-low .logo .go, .perf-low .hero-road::before, .perf-low .location-pin, .perf-low .avatar-wrap::before,
+.perf-low .btn::after, .perf-low .rv-sun, .perf-low .rv-wheel, .perf-low .rules-sos b, .perf-low .photo-upload-placeholder svg { animation:none !important; }
+.perf-low .rv-city { animation-duration:30s; }
+.perf-low .screen.active .bottom-sheet > * { animation-delay:0ms !important; }
+.perf-low .btn:hover { transform:none; }
+.perf-low .role-card::before { display:none; }
 </style>
 </head>
 <body>
@@ -555,8 +651,29 @@ svg { stroke-linecap:round; stroke-linejoin:round; }
 <div class="bg-grid"></div>
 <div class="shape shape-1"></div><div class="shape shape-2"></div><div class="shape shape-3"></div><div class="shape shape-4"></div>
 <div class="bg-road"></div><div class="bg-road r2"></div>
-<svg class="bg-car" viewBox="0 0 64 28" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h56M6 20l4-9a4 4 0 0 1 3.6-2.4h19a4 4 0 0 1 3.2 1.6L42 14l12 2.5a4 4 0 0 1 3 3.9V20"/><circle cx="18" cy="21" r="4" fill="var(--bg)"/><circle cx="46" cy="21" r="4" fill="var(--bg)"/></svg>
-<svg class="bg-car c2" viewBox="0 0 64 28" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h56M6 20l4-9a4 4 0 0 1 3.6-2.4h19a4 4 0 0 1 3.2 1.6L42 14l12 2.5a4 4 0 0 1 3 3.9V20"/><circle cx="18" cy="21" r="4" fill="var(--bg)"/><circle cx="46" cy="21" r="4" fill="var(--bg)"/></svg>
+<!-- Детализированная машина: фон -->
+<svg class="bg-car" viewBox="0 0 120 50" fill="none" stroke="currentColor" stroke-width="2.2">
+  <path d="M8 36h104M12 36l8-18a6 6 0 0 1 5.6-4h38a6 6 0 0 1 5 2.8L76 28l22 4a6 6 0 0 1 5 6v-2"/>
+  <path d="M28 18h26l8 10H28z" fill="var(--bg)" stroke-width="1.8"/>
+  <path d="M62 18h8l6 10H68z" fill="var(--bg)" stroke-width="1.8"/>
+  <circle cx="32" cy="37" r="7" fill="var(--bg)" stroke-width="2.2"/>
+  <circle cx="88" cy="37" r="7" fill="var(--bg)" stroke-width="2.2"/>
+  <circle cx="32" cy="37" r="2.5" fill="currentColor"/>
+  <circle cx="88" cy="37" r="2.5" fill="currentColor"/>
+  <path d="M4 28h8" stroke-width="3"/>
+  <path d="M108 28h8" stroke-width="3"/>
+</svg>
+<svg class="bg-car c2" viewBox="0 0 120 50" fill="none" stroke="currentColor" stroke-width="2.2">
+  <path d="M8 36h104M12 36l8-18a6 6 0 0 1 5.6-4h38a6 6 0 0 1 5 2.8L76 28l22 4a6 6 0 0 1 5 6v-2"/>
+  <path d="M28 18h26l8 10H28z" fill="var(--bg)" stroke-width="1.8"/>
+  <path d="M62 18h8l6 10H68z" fill="var(--bg)" stroke-width="1.8"/>
+  <circle cx="32" cy="37" r="7" fill="var(--bg)" stroke-width="2.2"/>
+  <circle cx="88" cy="37" r="7" fill="var(--bg)" stroke-width="2.2"/>
+  <circle cx="32" cy="37" r="2.5" fill="currentColor"/>
+  <circle cx="88" cy="37" r="2.5" fill="currentColor"/>
+  <path d="M4 28h8" stroke-width="3"/>
+  <path d="M108 28h8" stroke-width="3"/>
+</svg>
 <div class="cursor-glow" id="cursor-glow"></div>
 <div id="bg-map"></div>
 <canvas id="confetti"></canvas>
@@ -582,7 +699,15 @@ svg { stroke-linecap:round; stroke-linejoin:round; }
     <div class="bottom-sheet">
       <div class="sheet-handle"></div>
       <div class="logo-wrap"><div class="logo">КЕТТІК<span class="go">GO</span></div></div>
-      <div class="hero-road"><div class="hero-car"><svg viewBox="0 0 64 28" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 20h56M6 20l4-9a4 4 0 0 1 3.6-2.4h19a4 4 0 0 1 3.2 1.6L42 14l12 2.5a4 4 0 0 1 3 3.9V20"/><circle cx="18" cy="21" r="4" fill="var(--bg)"/><circle cx="46" cy="21" r="4" fill="var(--bg)"/></svg></div></div>
+      <div class="hero-road"><div class="hero-car"><svg viewBox="0 0 120 50" fill="none" stroke="currentColor" stroke-width="2.4">
+        <path d="M8 36h104M12 36l8-18a6 6 0 0 1 5.6-4h38a6 6 0 0 1 5 2.8L76 28l22 4a6 6 0 0 1 5 6v-2"/>
+        <path d="M28 18h26l8 10H28z" fill="var(--bg)" stroke-width="1.8"/>
+        <path d="M62 18h8l6 10H68z" fill="var(--bg)" stroke-width="1.8"/>
+        <circle cx="32" cy="37" r="7" fill="var(--bg)" stroke-width="2.4"/>
+        <circle cx="88" cy="37" r="7" fill="var(--bg)" stroke-width="2.4"/>
+        <circle cx="32" cy="37" r="2.5" fill="currentColor"/>
+        <circle cx="88" cy="37" r="2.5" fill="currentColor"/>
+      </svg></div></div>
       <div class="brand-sub" data-i18n="brandSub">сервис поездок</div>
 
       <div class="theme-seg" id="theme-seg">
@@ -615,6 +740,7 @@ svg { stroke-linecap:round; stroke-linejoin:round; }
       <div class="consent-box" id="consent-box">
         <label class="check" id="chk-rules-wrap"><input type="checkbox" id="chk-rules"><span class="box"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></span><span><span data-i18n="consentRulesPre">Я подтверждаю, что прочитал(а) и принимаю</span> <span class="lnk" id="open-rules" data-i18n="consentRulesLink">Правила безопасности и Условия использования</span></span></label>
         <label class="check" id="chk-pd-wrap"><input type="checkbox" id="chk-pd"><span class="box"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></span><span data-i18n="consentPD">Даю согласие на сбор и обработку моих персональных данных (имя, телефон, фото, геолокация) в соответствии с Законом РК «О персональных данных и их защите»</span></label>
+        <label class="check" id="chk-info-wrap"><input type="checkbox" id="chk-info"><span class="box"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></span><span data-i18n="consentInfo">Я понимаю, что КЕТТІКGO — информационный сервис, а не перевозчик</span></label>
         <label class="check" id="chk-age-wrap"><input type="checkbox" id="chk-age"><span class="box"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></span><span data-i18n="consentAge">Мне исполнилось 18 лет</span></label>
       </div>
 
@@ -624,33 +750,51 @@ svg { stroke-linecap:round; stroke-linejoin:round; }
     </div>
   </div>
 
-  <!-- РОЛЬ -->
+  <!-- РОЛЬ — НА ВЕСЬ ЭКРАН -->
   <div class="screen" id="screen-role">
     <div class="top-bar"><div class="brand-pill"><span class="brand-logo">КЕТТІК<b>GO</b></span><span class="brand-dot"></span></div></div>
-    <div style="flex:1; pointer-events:none;"></div>
     <div class="bottom-sheet">
-      <div class="sheet-handle"></div>
-      <div class="role-title" data-i18n="roleTitle">Кто вы?</div>
-      <div class="role-desc" data-i18n="roleDesc">Выберите свою роль, чтобы продолжить</div>
-      <div class="role-grid">
-        <div class="role-card" data-role="driver">
-          <div class="role-scene scene-drive">
-            <i class="rs-b" style="left:8%;height:34px"></i><i class="rs-b" style="left:24%;height:52px"></i><i class="rs-b" style="left:44%;height:28px"></i><i class="rs-b" style="left:62%;height:46px"></i><i class="rs-b" style="left:82%;height:36px"></i>
-            <div class="rs-road"></div>
-            <svg class="rs-car" viewBox="0 0 64 28" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 20h56M6 20l4-9a4 4 0 0 1 3.6-2.4h19a4 4 0 0 1 3.2 1.6L42 14l12 2.5a4 4 0 0 1 3 3.9V20"/><circle cx="18" cy="21" r="4" fill="var(--bg)"/><circle cx="46" cy="21" r="4" fill="var(--bg)"/></svg>
+      <div class="role-inner">
+        <div class="role-title" data-i18n="roleTitle">Кто вы?</div>
+        <div class="role-desc" data-i18n="roleDesc">Выберите свою роль, чтобы продолжить</div>
+        <div class="role-grid">
+          <div class="role-card" data-role="driver" style="--k:0">
+            <div class="role-scene rv-drive">
+              <div class="rv-sun"></div>
+              <div class="rv-city">
+                <svg viewBox="0 0 400 60" preserveAspectRatio="none" fill="currentColor"><path d="M0 60V34H18V20H40V34H54V8H80V34H96V26H116V36H140V16H162V30H182V12H210V34H232V22H256V36H278V18H304V30H326V10H352V34H400V60Z"/></svg>
+                <svg viewBox="0 0 400 60" preserveAspectRatio="none" fill="currentColor"><path d="M0 60V34H18V20H40V34H54V8H80V34H96V26H116V36H140V16H162V30H182V12H210V34H232V22H256V36H278V18H304V30H326V10H352V34H400V60Z"/></svg>
+              </div>
+              <div class="rv-roadbase"></div>
+              <div class="rv-dash"></div>
+              <div class="rv-carwrap">
+                <svg class="rv-car" viewBox="0 0 120 50" fill="none" stroke="currentColor" stroke-width="2.4">
+                  <path d="M8 36h104M12 36l8-18a6 6 0 0 1 5.6-4h38a6 6 0 0 1 5 2.8L76 28l22 4a6 6 0 0 1 5 6v-2"/>
+                  <path d="M28 18h26l8 10H28z" fill="var(--bg)" stroke-width="1.8"/>
+                  <path d="M62 18h8l6 10H68z" fill="var(--bg)" stroke-width="1.8"/>
+                  <g class="rv-wheel"><circle cx="32" cy="37" r="7" fill="var(--bg)" stroke-width="2.4"/><path d="M32 31v12M26 37h12" stroke-width="1.2"/></g>
+                  <g class="rv-wheel"><circle cx="88" cy="37" r="7" fill="var(--bg)" stroke-width="2.4"/><path d="M88 31v12M82 37h12" stroke-width="1.2"/></g>
+                </svg>
+              </div>
+            </div>
+            <div class="role-body"><div><div class="role-name" data-i18n="roleDriver">Таксист</div><div class="role-hint" data-i18n="roleDriverHint">Принимать заказы</div></div><div class="role-arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div></div>
           </div>
-          <div class="role-body"><div><div class="role-name" data-i18n="roleDriver">Таксист</div><div class="role-hint" data-i18n="roleDriverHint">Принимать заказы</div></div><div class="role-arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div></div>
-        </div>
-        <div class="role-card" data-role="passenger">
-          <div class="role-scene scene-pax">
-            <span class="rs-ring a"></span><span class="rs-ring b"></span><span class="rs-ring c"></span>
-            <svg class="rs-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5" fill="currentColor"/></svg>
-            <svg class="rs-man" viewBox="0 0 24 32" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="6" r="4"/><path d="M12 11v10M12 14l-6 5M12 14l6-4M12 21l-5 9M12 21l5 9"/></svg>
+          <div class="role-card" data-role="passenger" style="--k:1">
+            <div class="role-scene rv-pax">
+              <svg class="rv-map" viewBox="0 0 200 118" preserveAspectRatio="xMidYMid slice" fill="none" stroke="currentColor"><path d="M-10 30H210M-10 84H210M44 -10V130M124 -10V130M172 -10V130" stroke-width="7" opacity=".1"/><path d="M-10 62L70 50 130 92 210 74" stroke-width="2" stroke-dasharray="5 6" opacity=".45"/></svg>
+              <span class="rv-ring"></span><span class="rv-ring r2"></span>
+              <svg class="rv-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z" fill="var(--bg)"/><circle cx="12" cy="10" r="2.5" fill="currentColor"/></svg>
+              <svg class="rv-cardot" viewBox="0 0 120 50" fill="none" stroke="currentColor" stroke-width="2.8">
+                <path d="M8 36h104M12 36l8-18a6 6 0 0 1 5.6-4h38a6 6 0 0 1 5 2.8L76 28l22 4a6 6 0 0 1 5 6v-2"/>
+                <circle cx="32" cy="37" r="7" fill="var(--bg)" stroke-width="2.8"/>
+                <circle cx="88" cy="37" r="7" fill="var(--bg)" stroke-width="2.8"/>
+              </svg>
+            </div>
+            <div class="role-body"><div><div class="role-name" data-i18n="rolePassenger">Пассажир</div><div class="role-hint" data-i18n="rolePassengerHint">Найти машину</div></div><div class="role-arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div></div>
           </div>
-          <div class="role-body"><div><div class="role-name" data-i18n="rolePassenger">Пассажир</div><div class="role-hint" data-i18n="rolePassengerHint">Найти машину</div></div><div class="role-arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div></div>
         </div>
+        <button class="btn btn-ghost" id="btn-back-role" data-i18n="btnBack">Назад</button>
       </div>
-      <button class="btn btn-ghost" id="btn-back-role" data-i18n="btnBack">Назад</button>
     </div>
   </div>
 
@@ -782,6 +926,7 @@ svg { stroke-linecap:round; stroke-linejoin:round; }
       <div class="addr-input-wrap"><input type="text" id="manual-address" class="field-input" placeholder="Введите ваш адрес (город, улица, дом)" data-i18n-placeholder="manualAddressPlaceholder"></div>
       <div class="addr-hint" data-i18n="manualAddressHint">Если GPS не точен — введите адрес вручную</div>
       <div id="content-area"></div>
+      <div class="legal-foot" data-i18n="legalFoot">Информационный сервис, не перевозчик.</div>
     </div>
     <div class="order-popup" id="order-popup" style="display:none;"></div>
   </div>
@@ -876,7 +1021,7 @@ svg { stroke-linecap:round; stroke-linejoin:round; }
 // ============================================================
 // КОНФИГ
 // ============================================================
-const RULES_VERSION = '2027-01-01';
+const RULES_VERSION = '2026-10-14';
 const AI_CONFIG = { baseUrl: 'https://api.groq.com/openai/v1', apiKey: '', model: 'openai/gpt-oss-20b', maxTokens: 1500 };
 const LOW_PERF = document.documentElement.classList.contains('perf-low');
 
@@ -945,47 +1090,7 @@ const I18N = {
   driversOnline:'водителей рядом', quickPlaces:'Быстрый выбор', driverVerified:'Проверен',
   shareRoute:'Поделиться маршрутом', shareText:'Я в КЕТТІКGO. Маршрут',
   eta:'Прибытие', waitTimer:'Ожидание', userSos:'Вызов 112', phoneUnavailable:'Телефон недоступен',
-  rules: [
-   {t:'Общие положения', i:[
-    'КЕТТІКGO (далее — Сервис) — информационная платформа, которая помогает пассажирам и водителям находить друг друга. Сервис не является перевозчиком и не оказывает услуги такси.',
-    'Договор перевозки заключается напрямую между пассажиром и водителем в соответствии с законодательством Республики Казахстан.',
-    'Сервис предоставляется «как есть». Мы стремимся обеспечить бесперебойную работу, но не гарантируем отсутствие технических сбоев.']},
-   {t:'Возраст и учётная запись', i:[
-    'Пользоваться Сервисом могут лица, достигшие 18 лет и обладающие полной дееспособностью.',
-    'Одна учётная запись — один человек. Передача доступа третьим лицам, использование чужих данных, продажа или обмен аккаунтов запрещены.',
-    'Вы обязуетесь указывать достоверные данные. За ложные сведения и поддельные документы наступает ответственность по законодательству РК, а учётная запись блокируется без возврата.']},
-   {t:'Безопасность пассажира', i:[
-    'Перед посадкой обязательно сверьте имя водителя, марку, цвет и государственный номер автомобиля с данными в приложении.',
-    'Всегда пристёгивайтесь ремнём безопасности. Детей перевозите в детском удерживающем устройстве в соответствии с Правилами дорожного движения РК.',
-    'Не садитесь в автомобиль, если данные не совпадают, водитель выглядит нетрезвым, ведёт себя агрессивно или отказывается назвать имя.',
-    'Стоимость поездки согласуйте до начала. Не требуйте от водителя нарушать ПДД: превышать скорость, ехать на запрещающий сигнал, перевозить людей сверх числа мест.',
-    'Делитесь маршрутом и данными автомобиля с близкими. В случае угрозы немедленно звоните 112 или 102.']},
-   {t:'Требования к водителю', i:[
-    'Возраст не менее 18 лет, действующее водительское удостоверение нужной категории, соответствующий стаж вождения.',
-    'Автомобиль технически исправен, зарегистрирован в РК, прошёл обязательный технический осмотр и застрахован по ОГПО ВТС (обязательное страхование гражданско-правовой ответственности владельцев транспортных средств).',
-    'Водитель самостоятельно отвечает за наличие права осуществлять перевозки, регистрацию предпринимательской деятельности и уплату налогов в соответствии с законодательством РК.',
-    'Запрещено: управлять в состоянии алкогольного, наркотического или иного опьянения; пользоваться телефоном без hands-free; превышать скорость; перевозить больше пассажиров, чем позволяет конструкция автомобиля; отказывать в перевозке по дискриминационным признакам.',
-    'Соблюдайте Правила дорожного движения РК (постановление Правительства РК № 1196 от 13.11.2014), следите за исправностью автомобиля и чистотой салона.',
-    'При подозрении на недостоверность документов Сервис вправе приостановить доступ до проведения проверки.']},
-   {t:'Персональные данные', i:[
-    'Обработка данных осуществляется в соответствии с Законом РК «О персональных данных и их защите» от 21.05.2013 № 94-V.',
-    'Мы собираем: имя, телефон, email, фото, геолокацию; от водителей дополнительно — дату рождения, ИИН, фото документов и автомобиля.',
-    'Цели: регистрация, связь пассажира и водителя, проверка водителей, безопасность поездок, исполнение требований закона.',
-    'Водитель видит имя, фото и местоположение пассажира только по созданному заказу. Данные не продаются; их передача третьим лицам возможна только по основаниям, предусмотренным законом, или с вашего согласия.',
-    'Для предварительной проверки анкеты могут использоваться автоматизированные средства; фото документов, ИИН, телефон и email в сторонние ИИ-сервисы не передаются.',
-    'Вы вправе получить сведения о своих данных, потребовать их исправления или удаления, а также отозвать согласие — в настройках приложения (раздел «Удалить мои данные»).']},
-   {t:'Запрещённое поведение', i:[
-    'Запрещены оскорбления, угрозы, домогательства, мошенничество, ложные заказы, порча имущества, запись и публикация данных других людей без их согласия.',
-    'Запрещено использовать Сервис для любой противоправной деятельности: перевозки запрещённых веществ, оружия, людей, а также для скрытого сбора информации.',
-    'При нарушении правил Сервис вправе ограничить или заблокировать аккаунт. Правонарушения могут быть переданы в уполномоченные органы РК.']},
-   {t:'Ответственность и споры', i:[
-    'Сервис не несёт ответственности за действия водителей и пассажиров, качество автомобиля, состояние дорог и иные обстоятельства, не зависящие от Сервиса.',
-    'Ответственность за ущерб имуществу, здоровью или жизни третьих лиц несёт сторона, причинившая вред, в порядке, установленном законодательством РК.',
-    'Споры решаются путём переговоров, а при недостижении согласия — в порядке, установленном законодательством РК.']},
-   {t:'Экстренные ситуации', i:[
-    'При ДТП: остановитесь, включите аварийную сигнализацию, выставьте знак аварийной остановки, вызовите 112/102, окажите помощь пострадавшим и не покидайте место до прибытия сотрудников.',
-    'Нажмите значок ⚠ в приложении, чтобы быстро вызвать экстренные службы.'], sos:true}
-  ]
+  rules: []
  },
  kz: {
   brandSub:'сапар қызметі', themeLight:'Ашық', themeDark:'Қараңғы', photoLabel:'Сіздің суретіңіз', photoAdd:'Қосу',
@@ -1048,49 +1153,169 @@ const I18N = {
   driversOnline:'жүргізуші жақын', quickPlaces:'Жылдам таңдау', driverVerified:'Тексерілген',
   shareRoute:'Маршрутты бөлісу', shareText:'Мен КЕТТІКGO-дамын. Маршрут',
   eta:'Келу', waitTimer:'Күту', userSos:'112 шақыру', phoneUnavailable:'Телефон қолжетімсіз',
-  rules: [
-   {t:'Жалпы ережелер', i:[
-    'КЕТТІКGO (бұдан әрі — Сервис) — жолаушылар мен жүргізушілердің бір-бірін табуына көмектесетін ақпараттық платформа. Сервис тасымалдаушы емес және такси қызметін көрсетпейді.',
-    'Тасымалдау шарты жолаушы мен жүргізушінің арасында тікелей ҚР заңнамасына сәйкес жасалады.',
-    'Сервис «бар күйінде» ұсынылады. Техникалық ақаулар болмауына кепілдік берілмейді.']},
-   {t:'Жас және аккаунт', i:[
-    'Сервисті 18 жасқа толған, толық әрекет қабілетті адамдар пайдалана алады.',
-    'Бір аккаунт — бір адам. Басқаларға беру, бөтен деректерді пайдалану, сату немесе айырбастау тыйым салынады.',
-    'Дұрыс деректерді көрсетуге міндеттенесіз. Жалған мәлімет үшін ҚР заңнамасы бойынша жауапкершілік туады.']},
-   {t:'Жолаушының қауіпсіздігі', i:[
-    'Мінер алдында жүргізушінің атын, көліктің маркасын, түсін және нөмірін қосымшадағы деректермен салыстырыңыз.',
-    'Әрдайым қауіпсіздік белдігін тағыңыз. Балаларды ҚР Жол жүрісі ережелеріне сәйкес тасымалдаңыз.',
-    'Деректер сәйкес келмесе немесе жүргізуші мас болса, көлікке отырмаңыз.',
-    'Сапар құнын алдын ала келісіңіз. Жүргізушіден жол ережесін бұзуды талап етпеңіз.',
-    'Маршрутыңызды жақындарыңызға жіберіңіз. Қауіп төнсе, 112 немесе 102 нөміріне қоңырау шалыңыз.']},
-   {t:'Жүргізушіге талаптар', i:[
-    'Жасы 18-ден кем емес, жарамды жүргізуші куәлігі және жеткілікті тәжірибесі болуы керек.',
-    'Көлік техникалық жарамды, ҚР-да тіркелген, техникалық байқаудан өткен және КМҚ АӘ МК бойынша сақтандырылған.',
-    'Жүргізуші тасымалдау құқығына, кәсіпкерлік қызметті тіркеуге және салық төлеуге өзі жауап береді.',
-    'Тыйым салынады: мастық күйде жүргізу; hands-free-сіз телефонды пайдалану; жылдамдықты асыру; орыннан артық жолаушы тасымалдау; кемсіту.',
-    'ҚР Жол жүрісі ережелерін (ҚР Үкіметінің 13.11.2014 жылғы № 1196 қаулысы) сақтаңыз.',
-    'Құжаттардың дұрыстығына күмән туса, Сервис тексеру аяқталғанға дейін қолжетімділікті тоқтата тұруға құқылы.']},
-   {t:'Дербес деректер', i:[
-    'Деректер ҚР 21.05.2013 жылғы № 94-V «Дербес деректер және оларды қорғау туралы» Заңына сәйкес өңделеді.',
-    'Біз жинаймыз: аты, телефон, email, сурет, геолокация; жүргізушілерден қосымша — туған күні, ЖСН, құжаттар мен көлік фотолары.',
-    'Мақсаты: тіркеу, байланыстыру, тексеру, қауіпсіздік, заң талаптарын орындау.',
-    'Жүргізуші жолаушының деректерін тек тапсырыс бойынша көреді. Деректер сатылмайды.',
-    'Алдын ала тексеру үшін автоматтандырылған құралдар қолданылуы мүмкін; құжат фотосуреттері сыртқы ИИ-сервистерге берілмейді.',
-    'Сіз деректеріңізді түзетуді немесе жоюды талап етуге құқылысыз — параметрлерде.']},
-   {t:'Тыйым салынған мінез-құлық', i:[
-    'Қорлау, қоқан-лоққы, қудалау, алаяқтық, жалған тапсырыстар, басқалардың деректерін рұқсатсыз жариялау тыйым салынады.',
-    'Сервисті кез келген құқыққа қарсы әрекет үшін пайдалануға тыйым салынады.',
-    'Ережелер бұзылса, Сервис аккаунтты шектеуге немесе бұғаттауға құқылы.']},
-   {t:'Жауапкершілік және даулар', i:[
-    'Сервис жүргізушілер мен жолаушылардың әрекеттері үшін жауап бермейді.',
-    'Мүлікке, денсаулыққа келтірілген зиян үшін зиян келтірген тарап ҚР заңнамасына сәйкес жауап береді.',
-    'Даулар келіссөз арқылы, келісімге келмесе — ҚР заңнамасында белгіленген тәртіппен шешіледі.']},
-   {t:'Төтенше жағдайлар', i:[
-    'ЖКО кезінде: тоқтаңыз, апаттық сигналды қосыңыз, 112/102 шақырыңыз, зардап шеккендерге көмектесіңіз.',
-    'Жедел қызметтерге қоңырау шалу үшін қосымшадағы ⚠ белгішесін басыңыз.'], sos:true}
-  ]
+  rules: []
  }
 };
+
+const LEGAL = { operator: '', bin: '', address: '', email: '', phone: '' };
+Object.assign(I18N.ru, {
+  consentPD:'Даю согласие на сбор, обработку и хранение моих персональных данных (имя, телефон, фото, геолокация), включая трансграничную передачу на серверы облачного провайдера (Google Firebase), в соответствии с Законом РК «О персональных данных и их защите». Согласие можно отозвать в настройках.',
+  consentInfo:'Я понимаю, что КЕТТІКGO — информационный сервис, а не перевозчик: цену и условия поездки я согласую напрямую с водителем / пассажиром, расчёт происходит между нами',
+  consentDriver:'Подтверждаю, что документы подлинные, я вправе оказывать услуги перевозки по законодательству РК (включая регистрацию деятельности и уплату налогов), мой автомобиль исправен, прошёл техосмотр и застрахован (ОГПО ВТС), и я ознакомлен(а) с разделом правил для водителей',
+  consentDriverPD:'Даю согласие на обработку данных моих документов (ИИН, водительское удостоверение, фото) для проверки и допуска к работе, включая трансграничную передачу на серверы облачного провайдера',
+  aiApprovedText:'Автоматическая предварительная проверка пройдена. Она не заменяет проверку документов: при сомнениях доступ может быть приостановлен. Вы самостоятельно отвечаете за соблюдение законодательства РК.',
+  driverVerified:'Анкета пройдена', stDone:'Поездка', rulesVer:'Редакция от 14.10.2026',
+  orderTaken:'Заказ уже принят другим водителем', paxCancelled:'Пассажир отменил заказ', drvCancelledToast:'Водитель отказался. Ищем другого', orderCancelled:'Заказ отменён',
+  payLabel:'Оплата', payCash:'Наличные', payTransfer:'Перевод', commentLabel:'Комментарий водителю', commentPh:'Подъезд, этаж, багаж...',
+  estLine:'Ориентир по расстоянию', estFail:'Адрес не найден — укажите цену сами',
+  orderLegal:'КЕТТІКGO — информационный сервис. Цена и условия поездки согласуются напрямую с водителем; сервис не является перевозчиком и не принимает оплату.',
+  legalFoot:'Информационный сервис, не перевозчик. Договор перевозки заключается между пассажиром и водителем.',
+  raisePrice:'Поднять цену', offersTitle:'Предложения водителей', offerAccept:'Принять', offerSent:'Предложение отправлено', offerWaiting:'Ждём ответа пассажира...', offerCancel:'Отозвать предложение',
+  yourPrice:'Ваша цена', btnOfferFor:'Предложить', btnArrived:'Я на месте', btnStartTrip:'Начать поездку', btnDriverCancel:'Отказаться от заказа', driverCancelConfirm:'Отказаться от заказа?',
+  pxAccepted:'Водитель едет к вам', pxArrived:'Водитель на месте', pxInTrip:'Вы в пути', drvArrived:'Вы на месте', drvInTrip:'Поездка идёт',
+  checkPlate:'Перед посадкой сверьте номер автомобиля', arrivedToast:'Водитель на месте!', rateSkip:'Пропустить', rateSend:'Отправить', ratingNew:'новый', noOffers:'Пока нет предложений — ждём...',
+  statusArrived:'Водитель на месте', statusTrip:'В пути', sosShort:'Экстренный вызов', rulesOperator:'Оператор и контакты', opName:'Оператор', opBin:'БИН/ИИН', opAddress:'Адрес', opEmail:'Email', opPhone:'Телефон',
+  rules: [
+   {t:'Общие положения', i:[
+    'КЕТТІКGO (далее — Сервис) — информационная платформа (информационный посредник), которая помогает пассажирам и водителям находить друг друга. Сервис не является перевозчиком, службой такси, агентом или работодателем водителей, не оказывает транспортных услуг и не является стороной договора перевозки.',
+    'Договор перевозки заключается напрямую между пассажиром и водителем в соответствии с законодательством Республики Казахстан, в том числе законодательством об автомобильном транспорте.',
+    'Настоящие Правила — предложение Сервиса заключить пользовательское соглашение. Регистрация и использование Сервиса означают принятие Правил.',
+    'Сервис предоставляется «как есть». Мы стремимся обеспечить бесперебойную работу, но не гарантируем отсутствие технических сбоев, а также наличие водителей и пассажиров в конкретное время и месте.']},
+   {t:'Возраст и учётная запись', i:[
+    'Пользоваться Сервисом могут лица, достигшие 18 лет и обладающие полной дееспособностью.',
+    'Одна учётная запись — один человек. Передача доступа третьим лицам, использование чужих данных, продажа или обмен аккаунтов запрещены.',
+    'Вы обязуетесь указывать достоверные данные. За ложные сведения и поддельные документы наступает ответственность по законодательству РК, а учётная запись блокируется.']},
+   {t:'Заказ, цена и расчёты', i:[
+    'Цену поездки предлагает пассажир. Водитель вправе принять её либо предложить свою. Поездка считается согласованной, когда пассажир принял предложение водителя или водитель принял заказ.',
+    'Сервис не устанавливает тарифы и не принимает оплату. Расчёт производится напрямую между пассажиром и водителем выбранным ими способом (наличные или перевод).',
+    'Ориентировочная стоимость, расстояние и время в пути рассчитываются автоматически по картографическим данным, носят справочный характер и не являются офертой или гарантией цены.',
+    'Сейчас Сервис не взимает плату с пользователей. Если плата будет вводиться, мы заранее уведомим об этом в приложении.',
+    'Выдача чека и уплата налогов с дохода от перевозок — обязанность водителя в соответствии с налоговым законодательством РК.',
+    'Пассажир может отменить заказ до начала поездки, водитель вправе отказаться от принятого заказа по уважительной причине. Систематические отмены и ложные заказы могут привести к ограничению доступа.']},
+   {t:'Безопасность пассажира', i:[
+    'Перед посадкой обязательно сверьте имя водителя, марку, цвет и государственный номер автомобиля с данными в приложении.',
+    'Всегда пристёгивайтесь ремнём безопасности. Детей перевозите в детском удерживающем устройстве в соответствии с Правилами дорожного движения РК.',
+    'Не садитесь в автомобиль, если данные не совпадают, водитель выглядит нетрезвым, ведёт себя агрессивно или отказывается назвать имя.',
+    'Стоимость поездки согласуйте до начала. Не требуйте от водителя нарушать ПДД: превышать скорость, ехать на запрещающий сигнал, перевозить людей сверх числа мест.',
+    'Делитесь маршрутом и данными автомобиля с близкими. В случае угрозы немедленно звоните 112 или 102.']},
+   {t:'Требования к водителю', i:[
+    'Возраст не менее 18 лет, действующее водительское удостоверение нужной категории, соответствующий стаж вождения.',
+    'Автомобиль технически исправен, зарегистрирован в РК, прошёл обязательный технический осмотр и застрахован по ОГПО ВТС (обязательное страхование гражданско-правовой ответственности владельцев транспортных средств).',
+    'Водитель самостоятельно отвечает за наличие права осуществлять перевозки, регистрацию деятельности (ИП или иной предусмотренный законом статус) и уплату налогов и обязательных платежей. Между водителем и Сервисом нет трудовых отношений.',
+    'Запрещено: управлять в состоянии алкогольного, наркотического или иного опьянения; пользоваться телефоном без hands-free; превышать скорость; перевозить больше пассажиров, чем позволяет конструкция автомобиля; отказывать в перевозке по дискриминационным признакам; требовать доплату сверх согласованной цены.',
+    'Соблюдайте Правила дорожного движения РК (постановление Правительства РК № 1196 от 13.11.2014), следите за исправностью автомобиля и чистотой салона.',
+    'Сервис вправе запросить подтверждающие документы и приостановить доступ на время проверки.']},
+   {t:'Персональные данные и геолокация', i:[
+    'Обработка данных осуществляется в соответствии с Законом РК «О персональных данных и их защите» от 21.05.2013 № 94-V на основании вашего согласия, которое вы даёте при регистрации.',
+    'Мы собираем: имя, телефон, email, фото, геолокацию; от водителей дополнительно — дату рождения, ИИН, фото документов и автомобиля.',
+    'Цели: регистрация и идентификация, связь пассажира и водителя, проверка водителей, безопасность поездок, исполнение требований законодательства.',
+    'Геолокация используется при открытом приложении для подбора заказов и построения маршрутов. Вы можете запретить доступ к геолокации в настройках устройства и вводить адрес вручную.',
+    'Водитель видит имя, фото, телефон и местоположение пассажира только по созданному заказу; пассажир — имя, фото, телефон и данные автомобиля водителя только после согласования заказа.',
+    'Данные хранятся на серверах облачного провайдера (Google Firebase, регион Европа), что означает трансграничную передачу. Регистрируясь, вы даёте на это согласие. Данные не продаются; их передача третьим лицам возможна только по основаниям, предусмотренным законом, или с вашего согласия.',
+    'Для поиска адресов и построения маршрутов адреса и координаты передаются картографическим сервисам (OpenStreetMap / Nominatim, OSRM).',
+    'Данные заказа удаляются после его завершения или отмены. Профиль и документы хранятся до их удаления вами или отзыва согласия.',
+    'Предварительная проверка анкеты водителя автоматизированная (полнота данных, формат ИИН). Фото документов, ИИН, телефон и email во внешние ИИ-сервисы не передаются. Решение не является окончательным — вы можете запросить его ручной пересмотр.',
+    'Вы вправе получить сведения о своих данных, потребовать их исправления или удаления, отозвать согласие — в настройках приложения (раздел «Удалить мои данные») или обратившись к Оператору. В браузере сохраняется только выбранная тема оформления.']},
+   {t:'Запрещённое поведение', i:[
+    'Запрещены оскорбления, угрозы, домогательства, мошенничество, ложные заказы, порча имущества, запись и публикация данных других людей без их согласия.',
+    'Запрещено использовать Сервис для любой противоправной деятельности: перевозки запрещённых веществ, оружия, людей, а также для скрытого сбора информации.',
+    'При нарушении правил Сервис вправе ограничить или заблокировать аккаунт. Правонарушения могут быть переданы в уполномоченные органы РК.']},
+   {t:'Ответственность', i:[
+    'В пределах, допускаемых законодательством РК, Сервис не отвечает за действия и бездействие водителей и пассажиров, качество и безопасность перевозки, состояние автомобиля и дорог, а также за обстоятельства, не зависящие от Сервиса.',
+    'Правила не ограничивают права, которые по законодательству РК (в том числе о защите прав потребителей) не могут быть ограничены соглашением сторон.',
+    'Ответственность за вред жизни, здоровью и имуществу несёт сторона, причинившая вред, в порядке, установленном законодательством РК.',
+    'Пользователь отвечает за достоверность предоставленных данных и возмещает ущерб, причинённый Сервису их недостоверностью или нарушением Правил.']},
+   {t:'Обращения и споры', i:[
+    'Жалобы, претензии и запросы по персональным данным направляйте Оператору по контактам из раздела «Оператор и контакты» (если указаны) или через приложение.',
+    'Обращения рассматриваются в разумный срок, не превышающий сроков, установленных законодательством РК.',
+    'Споры решаются путём переговоров, а при недостижении согласия — в порядке, установленном законодательством РК. Применимое право — право Республики Казахстан.']},
+   {t:'Изменение правил', i:[
+    'Мы можем изменять Правила. Новая редакция публикуется в приложении с указанием даты; продолжение использования означает согласие с ней. Существенные изменения могут потребовать повторного принятия.',
+    'Если какое-либо положение признано недействительным, остальные сохраняют силу. Права на название, логотип и программное обеспечение Сервиса принадлежат Оператору.']},
+   {t:'Экстренные ситуации', i:[
+    'При ДТП: остановитесь, включите аварийную сигнализацию, выставьте знак аварийной остановки, вызовите 112/102, окажите помощь пострадавшим и не покидайте место до прибытия сотрудников.',
+    'Нажмите значок ⚠ в приложении, чтобы быстро вызвать экстренные службы.'], sos:true}
+  ]
+});
+Object.assign(I18N.kz, {
+  consentPD:'ҚР «Дербес деректер және оларды қорғау туралы» Заңына сәйкес дербес деректерімді (аты, телефон, сурет, геолокация) жинауға, өңдеуге және сақтауға, оның ішінде бұлттық провайдер серверлеріне (Google Firebase) трансшекаралық беруге келісім беремін. Келісімді параметрлерде кері қайтарып алуға болады.',
+  consentInfo:'КЕТТІКGO — ақпараттық сервис, тасымалдаушы емес екенін түсінемін: сапар бағасы мен шарттарын жүргізушімен / жолаушымен тікелей келісемін, есеп айырысу өзара жүзеге асады',
+  consentDriver:'Құжаттардың түпнұсқалығын, ҚР заңнамасына сәйкес тасымалдау қызметін көрсетуге құқығым бар екенін (қызметті тіркеу мен салық төлеуді қоса), көлігімнің жарамды, техникалық байқаудан өткен және сақтандырылғанын (КМҚ АӘ МК) растаймын, жүргізушілерге арналған ережелермен таныстым',
+  consentDriverPD:'Тексеру және жұмысқа жіберу үшін құжат деректерімді (ЖСН, жүргізуші куәлігі, фото) өңдеуге, оның ішінде бұлттық провайдер серверлеріне трансшекаралық беруге келісім беремін',
+  aiApprovedText:'Автоматты алдын ала тексеру сәтті өтті. Ол құжаттарды тексеруді алмастырмайды: күмән туса, қолжетімділік тоқтатылуы мүмкін. ҚР заңнамасын сақтауға өзіңіз жауап бересіз.',
+  driverVerified:'Анкета өтті', stDone:'Сапар', rulesVer:'Редакция: 14.10.2026',
+  orderTaken:'Тапсырысты басқа жүргізуші қабылдады', paxCancelled:'Жолаушы тапсырыстан бас тартты', drvCancelledToast:'Жүргізуші бас тартты. Басқасын іздейміз', orderCancelled:'Тапсырыс бас тартылды',
+  payLabel:'Төлем', payCash:'Қолма-қол', payTransfer:'Аударым', commentLabel:'Жүргізушіге түсініктеме', commentPh:'Кіреберіс, қабат, жүк...',
+  estLine:'Қашықтық бойынша шамамен', estFail:'Мекенжай табылмады — бағаны өзіңіз көрсетіңіз',
+  orderLegal:'КЕТТІКGO — ақпараттық сервис. Баға мен сапар шарттары жүргізушімен тікелей келісіледі; сервис тасымалдаушы емес және төлем қабылдамайды.',
+  legalFoot:'Ақпараттық сервис, тасымалдаушы емес. Тасымалдау шарты жолаушы мен жүргізуші арасында жасалады.',
+  raisePrice:'Бағаны көтеру', offersTitle:'Жүргізушілер ұсыныстары', offerAccept:'Қабылдау', offerSent:'Ұсыныс жіберілді', offerWaiting:'Жолаушының жауабын күтеміз...', offerCancel:'Ұсынысты қайтарып алу',
+  yourPrice:'Сіздің бағаңыз', btnOfferFor:'Ұсыну', btnArrived:'Мен орындамын', btnStartTrip:'Сапарды бастау', btnDriverCancel:'Тапсырыстан бас тарту', driverCancelConfirm:'Тапсырыстан бас тартасыз ба?',
+  pxAccepted:'Жүргізуші сізге келе жатыр', pxArrived:'Жүргізуші орнында', pxInTrip:'Сіз жолдасыз', drvArrived:'Сіз орындасыз', drvInTrip:'Сапар жүріп жатыр',
+  checkPlate:'Мінер алдында көлік нөмірін салыстырыңыз', arrivedToast:'Жүргізуші орнында!', rateSkip:'Өткізу', rateSend:'Жіберу', ratingNew:'жаңа', noOffers:'Әзірге ұсыныс жоқ — күтеміз...',
+  statusArrived:'Жүргізуші орнында', statusTrip:'Жолда', sosShort:'Жедел шақыру', rulesOperator:'Оператор және байланыс', opName:'Оператор', opBin:'БСН/ЖСН', opAddress:'Мекенжай', opEmail:'Email', opPhone:'Телефон',
+  rules: [
+   {t:'Жалпы ережелер', i:[
+    'КЕТТІКGO (бұдан әрі — Сервис) — жолаушылар мен жүргізушілердің бір-бірін табуына көмектесетін ақпараттық платформа (ақпараттық делдал). Сервис тасымалдаушы, такси қызметі, жүргізушілердің агенті немесе жұмыс берушісі емес, көлік қызметін көрсетпейді және тасымалдау шартының тарабы болып табылмайды.',
+    'Тасымалдау шарты жолаушы мен жүргізушінің арасында тікелей ҚР заңнамасына, оның ішінде автомобиль көлігі туралы заңнамаға сәйкес жасалады.',
+    'Осы Ережелер — Сервистің пайдаланушы келісімін жасасу туралы ұсынысы. Тіркелу және Сервисті пайдалану Ережелерді қабылдауды білдіреді.',
+    'Сервис «бар күйінде» ұсынылады. Біз тұрақты жұмысқа ұмтыламыз, бірақ техникалық ақаулардың болмауына, белгілі бір уақытта және жерде жүргізушілер мен жолаушылардың болуына кепілдік бермейміз.']},
+   {t:'Жас және аккаунт', i:[
+    'Сервисті 18 жасқа толған, толық әрекет қабілетті адамдар пайдалана алады.',
+    'Бір аккаунт — бір адам. Қолжетімділікті үшінші тұлғаларға беру, бөтен деректерді пайдалану, аккаунтты сату немесе айырбастау тыйым салынады.',
+    'Дұрыс деректерді көрсетуге міндеттенесіз. Жалған мәлімет пен жалған құжаттар үшін ҚР заңнамасы бойынша жауапкершілік туады, аккаунт бұғатталады.']},
+   {t:'Тапсырыс, баға және есеп айырысу', i:[
+    'Сапар бағасын жолаушы ұсынады. Жүргізуші оны қабылдауға немесе өз бағасын ұсынуға құқылы. Жолаушы жүргізушінің ұсынысын қабылдағанда немесе жүргізуші тапсырысты қабылдағанда сапар келісілген болып саналады.',
+    'Сервис тарифтерді белгілемейді және төлем қабылдамайды. Есеп айырысу жолаушы мен жүргізуші арасында тікелей, олар таңдаған тәсілмен (қолма-қол немесе аударым) жүргізіледі.',
+    'Шамамен құн, қашықтық және жол уақыты карта деректері бойынша автоматты есептеледі, анықтамалық сипатта болады және оферта немесе баға кепілдігі болып табылмайды.',
+    'Қазір Сервис пайдаланушылардан ақы алмайды. Ақы енгізілсе, қосымшада алдын ала хабарлаймыз.',
+    'Чек беру және тасымалдаудан түскен табысқа салық төлеу — ҚР салық заңнамасына сәйкес жүргізушінің міндеті.',
+    'Жолаушы сапар басталғанға дейін тапсырыстан бас тарта алады, жүргізуші дәлелді себеппен қабылданған тапсырыстан бас тартуға құқылы. Жүйелі бас тарту мен жалған тапсырыстар қолжетімділікті шектеуге әкелуі мүмкін.']},
+   {t:'Жолаушының қауіпсіздігі', i:[
+    'Мінер алдында жүргізушінің атын, көліктің маркасын, түсін және мемлекеттік нөмірін қосымшадағы деректермен салыстырыңыз.',
+    'Әрдайым қауіпсіздік белдігін тағыңыз. Балаларды ҚР Жол жүрісі ережелеріне сәйкес балалар ұстағышымен тасымалдаңыз.',
+    'Деректер сәйкес келмесе, жүргізуші мас болса, агрессивті болса немесе атын айтудан бас тартса, көлікке отырмаңыз.',
+    'Сапар құнын алдын ала келісіңіз. Жүргізушіден жол ережесін бұзуды талап етпеңіз: жылдамдықты асыру, тыйым салатын сигналмен жүру, орыннан артық адам тасымалдау.',
+    'Маршрутыңыз бен көлік деректерін жақындарыңызбен бөлісіңіз. Қауіп төнсе, дереу 112 немесе 102 нөміріне қоңырау шалыңыз.']},
+   {t:'Жүргізушіге қойылатын талаптар', i:[
+    'Жасы 18-ден кем емес, тиісті санаттағы жарамды жүргізуші куәлігі және жеткілікті жүргізу тәжірибесі болуы керек.',
+    'Көлік техникалық жарамды, ҚР-да тіркелген, міндетті техникалық байқаудан өткен және КМҚ АӘ МК бойынша сақтандырылған.',
+    'Жүргізуші тасымалдау құқығына, қызметті тіркеуге (ЖК немесе заңмен көзделген өзге мәртебе) және салықтар мен міндетті төлемдерді төлеуге өзі жауап береді. Жүргізуші мен Сервис арасында еңбек қатынастары жоқ.',
+    'Тыйым салынады: мас күйінде жүргізу; hands-free-сіз телефонды пайдалану; жылдамдықты асыру; көліктің конструкциясына сай келетіннен артық жолаушы тасымалдау; кемсіту белгілері бойынша тасымалдаудан бас тарту; келісілген бағадан артық ақы талап ету.',
+    'ҚР Жол жүрісі ережелерін (ҚР Үкіметінің 13.11.2014 жылғы № 1196 қаулысы) сақтаңыз, көліктің жарамдылығын және салонның тазалығын қадағалаңыз.',
+    'Сервис растайтын құжаттарды сұратуға және тексеру уақытына қолжетімділікті тоқтата тұруға құқылы.']},
+   {t:'Дербес деректер және геолокация', i:[
+    'Деректер ҚР 21.05.2013 жылғы № 94-V «Дербес деректер және оларды қорғау туралы» Заңына сәйкес, тіркелу кезінде берген келісіміңіз негізінде өңделеді.',
+    'Біз жинаймыз: аты, телефон, email, сурет, геолокация; жүргізушілерден қосымша — туған күні, ЖСН, құжаттар мен көлік фотолары.',
+    'Мақсаты: тіркеу және сәйкестендіру, жолаушы мен жүргізушіні байланыстыру, жүргізушілерді тексеру, сапар қауіпсіздігі, заң талаптарын орындау.',
+    'Геолокация қосымша ашық кезде тапсырыстарды іріктеу және маршрут құру үшін қолданылады. Құрылғы параметрлерінде геолокацияға тыйым салып, мекенжайды қолмен енгізуге болады.',
+    'Жүргізуші жолаушының аты, суреті, телефоны және орнын тек жасалған тапсырыс бойынша көреді; жолаушы жүргізушінің аты, суреті, телефоны және көлік деректерін тек тапсырыс келісілгеннен кейін көреді.',
+    'Деректер бұлттық провайдер серверлерінде (Google Firebase, Еуропа аймағы) сақталады, бұл трансшекаралық беруді білдіреді. Тіркеле отырып, сіз бұған келісім бересіз. Деректер сатылмайды; үшінші тұлғаларға тек заңда көзделген негіздер бойынша немесе сіздің келісіміңізбен беріледі.',
+    'Мекенжай іздеу және маршрут құру үшін мекенжайлар мен координаттар карта сервистеріне (OpenStreetMap / Nominatim, OSRM) беріледі.',
+    'Тапсырыс деректері ол аяқталғаннан немесе бас тартылғаннан кейін жойылады. Профиль мен құжаттар сіз жойғанға немесе келісімді қайтарып алғанға дейін сақталады.',
+    'Жүргізуші анкетасын алдын ала тексеру автоматтандырылған (деректердің толықтығы, ЖСН форматы). Құжат фотолары, ЖСН, телефон және email сыртқы ИИ-сервистерге берілмейді. Шешім түпкілікті емес — оны қолмен қайта қарауды сұратуға болады.',
+    'Сіз өз деректеріңіз туралы мәлімет алуға, оларды түзетуді немесе жоюды талап етуге, келісімді қайтарып алуға құқылысыз — қосымша параметрлерінде («Деректерімді жою») немесе Операторға жүгіну арқылы. Браузерде тек таңдалған безендіру тақырыбы сақталады.']},
+   {t:'Тыйым салынған мінез-құлық', i:[
+    'Қорлау, қоқан-лоққы, қудалау, алаяқтық, жалған тапсырыстар, мүлікке зиян келтіру, басқа адамдардың деректерін рұқсатсыз жазу және жариялау тыйым салынады.',
+    'Сервисті кез келген құқыққа қарсы әрекет үшін пайдалануға тыйым салынады: тыйым салынған заттарды, қаруды, адамдарды тасымалдау, сондай-ақ жасырын ақпарат жинау.',
+    'Ережелер бұзылса, Сервис аккаунтты шектеуге немесе бұғаттауға құқылы. Құқық бұзушылықтар ҚР уәкілетті органдарына берілуі мүмкін.']},
+   {t:'Жауапкершілік', i:[
+    'ҚР заңнамасы жол беретін шектерде Сервис жүргізушілер мен жолаушылардың әрекеті мен әрекетсіздігі, тасымалдаудың сапасы мен қауіпсіздігі, көлік пен жолдың жағдайы, сондай-ақ Сервиске байланысты емес жағдайлар үшін жауап бермейді.',
+    'Ережелер ҚР заңнамасына (оның ішінде тұтынушылардың құқықтарын қорғау туралы) сәйкес тараптардың келісімімен шектеуге болмайтын құқықтарды шектемейді.',
+    'Өмірге, денсаулыққа және мүлікке келтірілген зиян үшін зиян келтірген тарап ҚР заңнамасында белгіленген тәртіппен жауап береді.',
+    'Пайдаланушы берілген деректердің дұрыстығына жауап береді және олардың дұрыс еместігі немесе Ережелерді бұзу салдарынан Сервиске келтірілген зиянды өтейді.']},
+   {t:'Өтініштер және даулар', i:[
+    'Шағымдарды, талаптарды және дербес деректер бойынша сұрауларды «Оператор және байланыс» бөліміндегі байланыстар (көрсетілсе) бойынша немесе қосымша арқылы Операторға жіберіңіз.',
+    'Өтініштер ҚР заңнамасында белгіленген мерзімнен аспайтын ақылға қонымды мерзімде қаралады.',
+    'Даулар келіссөз арқылы, келісімге келмесе — ҚР заңнамасында белгіленген тәртіппен шешіледі. Қолданылатын құқық — Қазақстан Республикасының құқығы.']},
+   {t:'Ережелерді өзгерту', i:[
+    'Біз Ережелерді өзгерте аламыз. Жаңа редакция қосымшада күні көрсетіліп жарияланады; пайдалануды жалғастыру онымен келісуді білдіреді. Елеулі өзгерістер қайта қабылдауды талап етуі мүмкін.',
+    'Қандай да бір ереже жарамсыз деп танылса, қалғандары күшін сақтайды. Сервистің атауына, логотипіне және бағдарламалық жасақтамасына құқықтар Операторға тиесілі.']},
+   {t:'Төтенше жағдайлар', i:[
+    'ЖКО кезінде: тоқтаңыз, апаттық сигналды қосыңыз, апаттық тоқтау белгісін қойыңыз, 112/102 шақырыңыз, зардап шеккендерге көмектесіңіз және қызметкерлер келгенше орыннан кетпеңіз.',
+    'Жедел қызметтерге қоңырау шалу үшін қосымшадағы ⚠ белгішесін басыңыз.'], sos:true}
+  ]
+});
 
 let currentLang = 'ru';
 const t = k => I18N[currentLang][k] ?? k;
@@ -1136,7 +1361,7 @@ document.querySelectorAll('.lang-btn').forEach(btn => btn.addEventListener('clic
 // FIREBASE
 // ============================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, push, set, onValue, remove, update, off } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, push, set, onValue, remove, update, off, get, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 const firebaseConfig = {
   apiKey: "AIzaSyDkAlQ295XNbobRWMSnxIweTOrT1i3z_iA", authDomain: "vtaxi-9bf65.firebaseapp.com",
   databaseURL: "https://vtaxi-9bf65-default-rtdb.europe-west1.firebasedatabase.app", projectId: "vtaxi-9bf65",
@@ -1155,7 +1380,8 @@ const state = {
   activeOrderId:null, activePassengerOrderId:null, ordersListener:null, driverOrdersListener:null,
   ordersMapActive:false, ordersMapRadius:50, ordersMapMarkers:[], allOrders:[],
   driverData: emptyDriver(), driverFormStep:1, rulesRead:false, consentAt:null,
-  activeDriverInfo:null, lastRatedOrder:null
+  activeDriverInfo:null, lastRatedOrder:null,
+  driverActiveUnsub:null, paxUnsub:null, timerIv:null, seenOrders:null, busy:false
 };
 
 // ============================================================
@@ -1224,13 +1450,28 @@ syncThemeUI(document.documentElement.dataset.theme);
 // ============================================================
 // ЭФФЕКТЫ
 // ============================================================
-(function splash() {
-  const wrap = $('splash-logo'); const txt = 'КЕТТІК';
-  [...txt].forEach((c, i) => { const s = document.createElement('span'); s.className = 'ch'; s.textContent = c; s.style.animationDelay = (i * 70) + 'ms'; wrap.appendChild(s); });
+function buildSplashLogo(wrap) {
+  wrap.innerHTML = '';
+  [...'КЕТТІК'].forEach((c, i) => { const s = document.createElement('span'); s.className = 'ch'; s.textContent = c; s.style.animationDelay = (i * 70) + 'ms'; wrap.appendChild(s); });
   const go = document.createElement('span'); go.className = 'ch go'; go.textContent = 'GO'; go.style.animationDelay = '520ms'; wrap.appendChild(go);
+}
+(function splash() {
+  buildSplashLogo($('splash-logo'));
   setTimeout(() => $('splash').classList.add('hide'), reduceMotion ? 100 : 1700);
   setTimeout(() => $('splash').remove(), 2700);
 })();
+function runSplash(ms, onMid) {
+  return new Promise(resolve => {
+    const s = document.createElement('div'); s.id = 'splash-reg';
+    s.innerHTML = '<div class="splash-logo"></div><div class="splash-road"></div>';
+    document.body.appendChild(s); buildSplashLogo(s.firstChild);
+    setTimeout(() => {
+      try { onMid && onMid(); } catch (e) {}
+      s.classList.add('hide');
+      setTimeout(() => { s.remove(); resolve(); }, reduceMotion ? 60 : 800);
+    }, reduceMotion ? 300 : ms);
+  });
+}
 
 document.addEventListener('click', e => {
   const b = e.target.closest('.btn'); if (!b || b.disabled || LOW_PERF) return;
@@ -1239,11 +1480,6 @@ document.addEventListener('click', e => {
   b.appendChild(sp); setTimeout(() => sp.remove(), 700);
 });
 
-document.querySelectorAll('.role-card').forEach(card => {
-  if (LOW_PERF) return;
-  card.addEventListener('mousemove', e => { const r = card.getBoundingClientRect(); const x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5; card.style.transform = `rotateY(${x*14}deg) rotateX(${-y*14}deg) translateY(-4px)`; });
-  card.addEventListener('mouseleave', () => card.style.transform = '');
-});
 
 if (matchMedia('(pointer:fine)').matches && !LOW_PERF) {
   const g = $('cursor-glow'); let tx=0, ty=0, cx=0, cy=0;
@@ -1267,9 +1503,20 @@ function confetti() {
 // ПРАВИЛА
 // ============================================================
 let rulesMode = 'accept';
+function rulesWithOperator() {
+  const base = I18N[currentLang].rules.slice();
+  const op = [];
+  if (LEGAL.operator) op.push(t('opName') + ': ' + LEGAL.operator);
+  if (LEGAL.bin) op.push(t('opBin') + ': ' + LEGAL.bin);
+  if (LEGAL.address) op.push(t('opAddress') + ': ' + LEGAL.address);
+  if (LEGAL.email) op.push(t('opEmail') + ': ' + LEGAL.email);
+  if (LEGAL.phone) op.push(t('opPhone') + ': ' + LEGAL.phone);
+  if (op.length) base.splice(base.length - 1, 0, { t: t('rulesOperator'), i: op });
+  return base;
+}
 function renderRules() {
   const body = $('rules-body'); if (!body) return;
-  body.innerHTML = I18N[currentLang].rules.map((s, i) => `
+  body.innerHTML = rulesWithOperator().map((s, i) => `
     <div class="rules-sec" style="--i:${i}"><h4><span>${i + 1}</span>${escapeHtml(s.t)}</h4>
     <ul>${s.i.map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul>
     ${s.sos ? `<div class="rules-sos"><div><b>112</b>${t('sos112')}</div><div><b>102</b>${t('sos102')}</div><div><b>103</b>${t('sos103')}</div></div>` : ''}</div>`).join('');
@@ -1344,7 +1591,8 @@ function reverseGeocode(lat, lng) {
   }).catch(() => null);
 }
 function forwardGeocode(q) {
-  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=6&accept-language=${currentLang === 'kz' ? 'kk' : 'ru'}&addressdetails=1`;
+  const bias = state.lat ? `&viewbox=${(state.lng - .7).toFixed(4)},${(state.lat + .7).toFixed(4)},${(state.lng + .7).toFixed(4)},${(state.lat - .7).toFixed(4)}` : '';
+  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=6&countrycodes=kz${bias}&accept-language=${currentLang === 'kz' ? 'kk' : 'ru'}&addressdetails=1`;
   return fetch(url, { headers: { 'Accept': 'application/json' } }).then(r => r.json()).catch(() => []);
 }
 async function geocodeAddress(addr) { if (!addr) return null; const r = await forwardGeocode(addr); return r && r.length ? { lat: parseFloat(r[0].lat), lng: parseFloat(r[0].lon) } : null; }
@@ -1376,7 +1624,7 @@ $('location-card').addEventListener('click', openMapModal);
 // ============================================================
 let bgMap = null, bgMarker = null, routePolyline = null, routeMarkers = [];
 function initBgMap() { if (bgMap) return; bgMap = L.map('bg-map', { zoomControl: true }).setView([51.2333, 51.3667], 13); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(bgMap); }
-function showBgMap(show) { const el = $('bg-map'); if (show) { el.classList.add('visible'); if (!bgMap) initBgMap(); setTimeout(() => bgMap && bgMap.invalidateSize(), 100); } else el.classList.remove('visible'); }
+function showBgMap(show) { const el = $('bg-map'); document.documentElement.classList.toggle('map-on', !!show); if (show) { el.classList.add('visible'); if (!bgMap) initBgMap(); setTimeout(() => bgMap && bgMap.invalidateSize(), 100); } else el.classList.remove('visible'); }
 function updateBgMarker() {
   if (!bgMap || !state.lat || !state.lng) return;
   if (!bgMarker) { bgMarker = L.marker([state.lat, state.lng], { icon: L.divIcon({ className: 'driver-marker-wrapper', html: '<div class="me-marker"></div>', iconSize: [24,24], iconAnchor: [12,12] }) }).addTo(bgMap); }
@@ -1403,7 +1651,7 @@ async function buildRoute(fLat, fLng, tLat, tLng) {
 const profileKey = () => sanitizeKey(state.phone || state.fullname);
 function saveProfileToFirebase() {
   if (!state.fullname) return;
-  return set(ref(db, 'profiles/' + profileKey()), { fullname: state.fullname, phone: state.phone, mail: state.mail, photo: state.photo, consent: state.consentAt ? { version: RULES_VERSION, acceptedAt: state.consentAt, rules: true, personalData: true, adult: true } : null, updatedAt: Date.now() }).catch(() => {});
+  return set(ref(db, 'profiles/' + profileKey()), { fullname: state.fullname, phone: state.phone, mail: state.mail, photo: state.photo, consent: state.consentAt ? { version: RULES_VERSION, acceptedAt: state.consentAt, rules: true, serviceInfoOnly: true, personalData: true, crossBorder: true, adult: true } : null, updatedAt: Date.now() }).catch(() => {});
 }
 function saveDriverProfileToFirebase(status = 'pending', aiResult = null) {
   if (!state.fullname) return;
@@ -1411,7 +1659,7 @@ function saveDriverProfileToFirebase(status = 'pending', aiResult = null) {
 }
 function publishOrder(order) {
   const r = push(ref(db, 'orders'));
-  return set(r, { ...order, fullname: state.fullname, phone: state.phone, photo: state.photo, createdAt: Date.now(), status: 'waiting', driverId: null }).then(() => r.key);
+  return set(r, { ...order, passengerKey: profileKey(), fullname: state.fullname, phone: state.phone, photo: state.photo, createdAt: Date.now(), status: 'waiting', driverId: null }).then(() => r.key);
 }
 function publishDriver() {
   return set(ref(db, 'drivers/' + profileKey()), { fullname: state.fullname, phone: state.phone, photo: state.photo, mail: state.mail, location: state.location, lat: state.lat, lng: state.lng, hasCar: state.hasCar,
@@ -1426,7 +1674,7 @@ async function aiValidateDriverForm() {
   if (!AI_CONFIG.apiKey) return localValidateDriverForm();
   const d = state.driverData;
   const prompt = `Оцени реалистичность анкеты водителя. JSON: {"approved":bool,"score":0-100,"issues":[string],"summary":string}.
-ФИО: ${d.fullname}; год рождения: ${(d.birthdate||'').slice(0,4)}; авто: ${d.carBrand}, ${d.carColor}, ${d.carPlate}, ${d.carYear};
+авто: ${d.carBrand}, ${d.carColor}, ${d.carPlate}, ${d.carYear};
 ИИН валиден: ${validateIIN(d.iin, d.birthdate) ? 'да' : 'нет'}.`;
   const ctrl = new AbortController(); const to = setTimeout(() => ctrl.abort(), 30000);
   try {
@@ -1567,15 +1815,22 @@ function refreshOrdersMap() {
     const m = L.marker([o.lat, o.lng], { icon: L.divIcon({ className: 'order-marker-wrapper', html: `<div class="${cls}">${o.price}₸</div>`, iconSize: [54,36], iconAnchor: [27,42] }) }).addTo(bgMap);
     m.on('click', () => showOrderPopup(o, d)); state.ordersMapMarkers.push(m); });
 }
-async function acceptOrder(order) {
-  await update(ref(db, 'orders/' + order.id), { status: 'accepted', driverId: profileKey(), driverName: state.fullname, driverPhoto: state.photo, acceptedAt: Date.now() });
+async function acceptOrder(order, price) {
+  const rating = await getRating(profileKey());
+  const res = await runTransaction(ref(db, 'orders/' + order.id), cur => {
+    if (cur === null) return null;
+    if (cur.status !== 'waiting') return;
+    return { ...cur, status: 'accepted', price: price || cur.price, driverId: profileKey(), driverName: state.fullname, driverPhoto: state.photo || '', driverPhone: state.phone, driverCar: myCar(), driverRating: rating, acceptedAt: Date.now() };
+  }).catch(() => null);
+  if (!res || !res.committed || !res.snapshot.val()) { toast(t('orderTaken'), true); return null; }
   state.activeOrderId = order.id;
+  return { id: order.id, ...res.snapshot.val() };
 }
 function showOrderPopup(order, distance) {
   const dt = distance < 1 ? (distance * 1000).toFixed(0) + ' м' : distance.toFixed(1) + ' ' + t('km');
   orderPopup.innerHTML = `<div class="order-popup-close" id="op-close"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
     <div class="order-popup-distance">${dt} ${t('orderDistance')}</div>
-    <div class="active-order" style="margin-bottom:0;"><div class="active-title">${t('orderFrom')} ${escapeHtml(order.fullname)}</div><div class="active-price">${order.price} ₸</div>
+    <div class="active-order" style="margin-bottom:0;"><div class="active-title">${t('orderFrom')} ${escapeHtml(order.fullname)}</div><div class="active-price">${priceOf(order)} ₸</div>
     <div class="active-route"><div class="route-line"><span class="dot dot-start"></span><span>${escapeHtml(order.from || '—')}</span></div><div class="route-line"><span class="dot dot-end"></span><span>${escapeHtml(order.to || '—')}</span></div></div>
     <div class="active-actions" style="display:flex;flex-direction:column;gap:10px;"><button class="btn btn-nav" id="op-nav">${t('navToPassenger')}</button>
     <div style="display:flex;gap:10px;"><button class="btn btn-danger" id="op-decline" style="flex:1">${t('btnDecline')}</button><button class="btn btn-success" id="op-accept" style="flex:1">${t('btnAccept')}</button></div></div></div>`;
@@ -1583,7 +1838,7 @@ function showOrderPopup(order, distance) {
   $('op-close').addEventListener('click', () => orderPopup.style.display = 'none');
   $('op-decline').addEventListener('click', () => orderPopup.style.display = 'none');
   $('op-nav').addEventListener('click', async () => { const info = await buildRoute(state.lat, state.lng, order.lat, order.lng); if (info) { orderPopup.style.display = 'none'; toast(`${info.distance} ${t('km')} · ${info.time} ${t('min')}`); } else toast(t('navNoRoute'), true); });
-  $('op-accept').addEventListener('click', async () => { await acceptOrder(order); orderPopup.style.display = 'none'; closeOrdersMap(); renderDriverActiveOrder(order); });
+  $('op-accept').addEventListener('click', () => { orderPopup.style.display = 'none'; openDriverOrderModal(order); });
 }
 radiusSlider.addEventListener('input', e => { state.ordersMapRadius = +e.target.value; radiusValue.textContent = state.ordersMapRadius + ' ' + t('km'); refreshOrdersMap(); });
 btnOrdersMap.addEventListener('click', () => state.ordersMapActive ? closeOrdersMap() : openOrdersMap());
@@ -1623,65 +1878,189 @@ $('btn-map-confirm').addEventListener('click', () => {
 modalMap.addEventListener('click', e => { if (e.target === modalMap) modalMap.classList.remove('active'); });
 
 // ============================================================
+// ОБЩЕЕ ДЛЯ ВОДИТЕЛЯ И ПАССАЖИРА
+// ============================================================
+const TARIFF = { min: 500, base: 500, perKm: 100, step: 50, max: 100000, def: 1000 };
+const PHONE_SVG = '<svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/></svg>';
+const STAR_SVG = '<svg viewBox="0 0 24 24"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>';
+const roundPrice = v => Math.round(v / TARIFF.step) * TARIFF.step;
+const estimatePrice = km => Math.max(TARIFF.min, roundPrice(TARIFF.base + km * TARIFF.perKm));
+const priceOf = o => Math.max(0, Math.round(Number(o && o.price)) || 0);
+const payLabel = p => p === 'transfer' ? t('payTransfer') : t('payCash');
+const unsub = k => { const f = state[k]; state[k] = null; if (typeof f === 'function') { try { f(); } catch (e) {} } };
+const fmtTime = s => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+const safeImg = p => (typeof p === 'string' && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(p)) ? p : '';
+const avatarHtml = p => safeImg(p) ? `<img src="${safeImg(p)}" alt="">` : '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>';
+const routeHtml = (from, to) => `<div class="active-route"><div class="route-line"><span class="dot dot-start"></span><span>${escapeHtml(from || '—')}</span></div><div class="route-line"><span class="dot dot-end"></span><span>${escapeHtml(to || '—')}</span></div></div>`;
+const carText = c => c ? [c.brand, c.color].filter(Boolean).join(', ') : '';
+const ratingText = r => r ? `★ ${r.avg} (${r.count})` : `★ ${t('ratingNew')}`;
+const myCar = () => state.driverData.carBrand ? { brand: state.driverData.carBrand, color: state.driverData.carColor, plate: state.driverData.carPlate, year: state.driverData.carYear } : null;
+const callPhone = p => { const d = String(p || '').replace(/\D/g, ''); if (d) location.href = 'tel:+' + d; else toast(t('phoneUnavailable'), true); };
+function startTimer(id, since) {
+  clearInterval(state.timerIv);
+  const tick = () => { const el = $(id); if (!el) { clearInterval(state.timerIv); return; } el.textContent = fmtTime(Math.max(0, Math.floor((Date.now() - since) / 1000))); };
+  tick(); state.timerIv = setInterval(tick, 1000);
+}
+let audioCtx = null;
+function alertUser() {
+  try { navigator.vibrate && navigator.vibrate([120, 60, 120]); } catch (e) {}
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    audioCtx = audioCtx || new AC(); if (audioCtx.state === 'suspended') audioCtx.resume();
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = 'sine'; o.frequency.value = 880; g.gain.value = .07; o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + .16);
+  } catch (e) {}
+}
+async function getRating(key) {
+  try { const v = (await get(ref(db, 'ratings/' + key))).val(); if (v && v.count) return { avg: +(v.sum / v.count).toFixed(1), count: v.count }; } catch (e) {}
+  return null;
+}
+function addRating(key, stars) {
+  return runTransaction(ref(db, 'ratings/' + key), cur => { cur = cur || { sum: 0, count: 0 }; return { sum: (cur.sum || 0) + stars, count: (cur.count || 0) + 1 }; }).catch(() => {});
+}
+
+// ============================================================
 // ВОДИТЕЛЬ
 // ============================================================
 function renderDriverOrders() {
-  setStatus(1);
+  setStatus(1); unsub('driverOrdersListener'); unsub('driverActiveUnsub'); unsub('paxUnsub'); clearInterval(state.timerIv); state.seenOrders = null;
   contentArea.innerHTML = `<div class="section-label">${t('searchLabel')}</div><div id="online-badge" style="font-size:.72rem;color:var(--text-2);font-weight:700;padding:0 4px 10px;">—</div><button class="btn btn-map" id="btn-open-orders-map">${t('btnOrdersMap')}</button><div style="margin-top:14px;"></div>
     <div id="driver-orders-wrap"><div class="waiting"><div class="radar"><div class="radar-core"></div></div><div class="waiting-text">${t('searchWait')}</div></div></div>`;
   $('btn-open-orders-map').addEventListener('click', openOrdersMap);
-  // счётчик водителей онлайн
-  onValue(ref(db, 'drivers'), snap => {
-    const data = snap.val(); const box = $('online-badge'); if (!box) return;
-    let near = 0; const all = data ? Object.values(data) : [];
+  get(ref(db, 'drivers')).then(snap => {
+    const box = $('online-badge'); if (!box) return;
+    const all = snap.val() ? Object.values(snap.val()) : []; let near = 0;
     if (state.lat) all.forEach(d => { if (d.lat && d.lng && haversine(state.lat, state.lng, d.lat, d.lng) <= 5) near++; }); else near = all.length;
     box.textContent = `${near} ${t('driversOnline')}`;
-  }, { onlyOnce: true });
-  const wrap = $('driver-orders-wrap');
-  if (state.driverOrdersListener) off(ref(db, 'orders'), 'value', state.driverOrdersListener);
-  const empty = () => wrap.innerHTML = `<div class="waiting"><div class="radar"><div class="radar-core"></div></div><div class="waiting-text">${t('searchEmpty')}</div></div>`;
+  }).catch(() => {});
   state.driverOrdersListener = onValue(ref(db, 'orders'), snap => {
     const data = snap.val();
-    state.allOrders = data ? Object.entries(data).map(([id, o]) => ({ id, ...o })).filter(o => o.status === 'waiting') : [];
+    state.allOrders = data ? Object.entries(data).map(([id, o]) => ({ id, ...o })).filter(o => o && o.status === 'waiting') : [];
+    const ids = new Set(state.allOrders.map(o => o.id));
+    if (state.seenOrders && [...ids].some(id => !state.seenOrders.has(id))) alertUser();
+    state.seenOrders = ids;
     if (state.ordersMapActive) refreshOrdersMap();
-    if (!wrap.isConnected) return;
-    const orders = [...state.allOrders].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)); if (!orders.length) return empty();
+    const wrap = $('driver-orders-wrap'); if (!wrap) return;
+    if (!state.allOrders.length) { wrap.innerHTML = `<div class="waiting"><div class="radar"><div class="radar-core"></div></div><div class="waiting-text">${t('searchEmpty')}</div></div>`; return; }
+    const rows = state.allOrders.map(o => ({ o, d: (state.lat && o.lat && o.lng) ? haversine(state.lat, state.lng, o.lat, o.lng) : null }))
+      .sort((a, b) => (a.d ?? 1e9) - (b.d ?? 1e9) || (b.o.createdAt || 0) - (a.o.createdAt || 0));
     wrap.innerHTML = '<div class="orders"></div>'; const box = wrap.querySelector('.orders');
-    orders.forEach((o, i) => { const el = document.createElement('div'); el.className = 'order'; el.style.animationDelay = (i * 70) + 'ms';
-      el.innerHTML = `<div class="order-route"><div class="route-line"><span class="dot dot-start"></span><span>${escapeHtml(o.from || '—')}</span></div><div class="route-line"><span class="dot dot-end"></span><span>${escapeHtml(o.to || '—')}</span></div><div class="order-meta"><span>${escapeHtml(o.fullname || '')}</span></div></div><div class="order-price">${o.price} ₸</div>`;
-      el.addEventListener('click', () => openDriverOrderModal(o)); box.appendChild(el); });
+    rows.forEach(({ o, d }, i) => {
+      const dist = d == null ? '' : (d < 1 ? Math.round(d * 1000) + ' м' : d.toFixed(1) + ' ' + t('km')) + ' ' + t('orderDistance');
+      const meta = [dist, o.tripKm ? Number(o.tripKm) + ' ' + t('km') : '', payLabel(o.pay)].filter(Boolean).join(' · ');
+      const el = document.createElement('div'); el.className = 'order'; el.style.animationDelay = Math.min(i, 6) * 60 + 'ms';
+      el.innerHTML = `<div class="order-route"><div class="route-line"><span class="dot dot-start"></span><span>${escapeHtml(o.from || '—')}</span></div><div class="route-line"><span class="dot dot-end"></span><span>${escapeHtml(o.to || '—')}</span></div><div class="order-meta"><span>${escapeHtml(meta)}</span></div></div><div class="order-price">${priceOf(o)} ₸</div>`;
+      el.addEventListener('click', () => openDriverOrderModal(o)); box.appendChild(el);
+    });
   });
 }
+
 function openDriverOrderModal(order) {
-  const m = $('price-modal-content');
-  m.innerHTML = `<div class="modal-title">${t('orderFrom')} ${escapeHtml(order.fullname)}</div><div class="modal-sub">${escapeHtml(order.location || '')}</div><div class="active-price">${order.price} ₸</div>
-    <div class="active-route"><div class="route-line"><span class="dot dot-start"></span><span>${escapeHtml(order.from || '—')}</span></div><div class="route-line"><span class="dot dot-end"></span><span>${escapeHtml(order.to || '—')}</span></div></div>
-    <div style="display:flex;gap:10px;"><button class="btn btn-danger" id="drv-decline" style="margin-top:0">${t('btnDecline')}</button><button class="btn btn-success" id="drv-accept" style="margin-top:0">${t('btnAccept')}</button></div>`;
+  const base = priceOf(order), m = $('price-modal-content');
+  const d = (state.lat && order.lat && order.lng) ? haversine(state.lat, state.lng, order.lat, order.lng) : null;
+  const info = [d != null ? (d < 1 ? Math.round(d * 1000) + ' м' : d.toFixed(1) + ' ' + t('km')) + ' ' + t('orderDistance') : '', order.tripKm ? Number(order.tripKm) + ' ' + t('km') : '', payLabel(order.pay)].filter(Boolean).join(' · ');
+  m.innerHTML = `<div class="modal-title">${t('orderFrom')} ${escapeHtml(order.fullname)}</div><div class="modal-sub">${escapeHtml(order.location || '')}</div>
+    <div class="active-price">${base} ₸</div>${routeHtml(order.from, order.to)}
+    <div class="addr-hint">${escapeHtml(info)}</div>${order.comment ? `<div class="addr-hint">💬 ${escapeHtml(order.comment)}</div>` : ''}
+    <div class="field" style="margin-top:8px"><label class="field-label">${t('yourPrice')}</label>
+      <div class="stepper"><button type="button" class="step-btn" id="o-minus">−</button><input type="number" id="o-price" class="field-input" value="${base}" step="${TARIFF.step}" min="100" inputmode="numeric"><button type="button" class="step-btn" id="o-plus">+</button></div></div>
+    <div style="display:flex;gap:10px;margin-top:14px;"><button class="btn btn-ghost" id="drv-decline" style="margin-top:0">${t('btnDecline')}</button><button class="btn btn-success" id="drv-accept" style="margin-top:0"></button></div>`;
+  const inp = $('o-price'), btn = $('drv-accept');
+  const val = () => Math.min(TARIFF.max, Math.max(100, parseInt(inp.value, 10) || base));
+  const sync = () => { const v = val(); btn.textContent = v === base ? `${t('btnAccept')} · ${v} ₸` : `${t('btnOfferFor')} ${v} ₸`; };
+  $('o-minus').addEventListener('click', () => { inp.value = Math.max(100, val() - TARIFF.step); sync(); });
+  $('o-plus').addEventListener('click', () => { inp.value = Math.min(TARIFF.max, val() + TARIFF.step); sync(); });
+  inp.addEventListener('input', sync); sync();
   modalPrice.classList.add('active');
   $('drv-decline').addEventListener('click', () => modalPrice.classList.remove('active'));
-  $('drv-accept').addEventListener('click', async () => { await acceptOrder(order); modalPrice.classList.remove('active'); if (state.ordersMapActive) closeOrdersMap(); renderDriverActiveOrder(order); });
-}
-function renderDriverActiveOrder(order) {
-  setStatus(2);
-  if (state.driverOrdersListener) { off(ref(db, 'orders'), 'value', state.driverOrdersListener); state.driverOrdersListener = null; }
-  const ph = order.photo ? `<img src="${order.photo}" alt="">` : `<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>`;
-  contentArea.innerHTML = `<div class="driver-card">
-      <div class="avatar">${ph}</div>
-      <div class="meta"><div class="name">${escapeHtml(order.fullname || '')}</div><div class="car">${escapeHtml(order.location || '')}</div><div class="plate">${escapeHtml(order.from || '—')}</div></div>
-      <button class="call-btn" id="drv-call"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/></svg></button>
-    </div>
-    <div class="active-order"><div class="active-title">${t('driverAccepted')}</div><div class="active-price">${order.price} ₸</div>
-    <div class="active-route"><div class="route-line"><span class="dot dot-start"></span><span>${escapeHtml(order.from || '—')}</span></div><div class="route-line"><span class="dot dot-end"></span><span>${escapeHtml(order.to || '—')}</span></div></div>
-    <div id="nav-info"></div><div class="active-actions" style="display:flex;flex-direction:column;gap:10px;">
-    <button class="btn btn-nav" id="drv-nav-p">${t('navToPassenger')}</button><button class="btn btn-nav" id="drv-nav-d">${t('navToDestination')}</button><button class="btn btn-danger" id="drv-finish">${t('btnFinish')}</button></div></div>`;
-  showBgMap(true);
-  $('drv-call').addEventListener('click', () => { if (order.phone) location.href = 'tel:' + order.phone.replace(/\D/g, ''); else toast(t('phoneUnavailable'), true); });
-  $('drv-nav-p').addEventListener('click', async () => { if (!state.lat) return toast(t('noLocation'), true); const c = order.lat ? { lat: order.lat, lng: order.lng } : await geocodeAddress(order.location || order.from); const i = c && await buildRoute(state.lat, state.lng, c.lat, c.lng); i ? showNavInfo(i) : toast(t('navNoRoute'), true); });
-  $('drv-nav-d').addEventListener('click', async () => { const c = await geocodeAddress(order.to); const s = order.lat ? { lat: order.lat, lng: order.lng } : (await geocodeAddress(order.from)) || (state.lat ? { lat: state.lat, lng: state.lng } : null); const i = c && s && await buildRoute(s.lat, s.lng, c.lat, c.lng); i ? showNavInfo(i) : toast(t('navNoRoute'), true); });
-  $('drv-finish').addEventListener('click', async () => {
-    if (state.activeOrderId) await remove(ref(db, 'orders/' + state.activeOrderId));
-    state.activeOrderId = null; clearRoute(); setStatus(4); renderDriverOrders();
+  btn.addEventListener('click', async () => {
+    const v = val(); btn.disabled = true;
+    if (v === base) {
+      const o = await acceptOrder(order, v); modalPrice.classList.remove('active');
+      if (o) { if (state.ordersMapActive) closeOrdersMap(); renderDriverActiveOrder(o); }
+    } else {
+      const ok = await sendOffer(order, v, d); modalPrice.classList.remove('active');
+      if (ok) { if (state.ordersMapActive) closeOrdersMap(); renderDriverOffering(order, v); }
+    }
   });
+}
+
+async function sendOffer(order, price, dist) {
+  try {
+    const st = (await get(ref(db, `orders/${order.id}/status`))).val();
+    if (st !== 'waiting') { toast(t('orderTaken'), true); return false; }
+    const rating = await getRating(profileKey());
+    await set(ref(db, `orders/${order.id}/offers/${profileKey()}`), { price, driverName: state.fullname, driverPhoto: state.photo || '', driverPhone: state.phone, driverCar: myCar(), driverRating: rating, eta: dist != null ? Math.max(1, Math.round(dist / 30 * 60)) : null, createdAt: Date.now() });
+    return true;
+  } catch (e) { toast(t('orderTaken'), true); return false; }
+}
+
+function renderDriverOffering(order, price) {
+  setStatus(1); unsub('driverOrdersListener'); unsub('driverActiveUnsub'); clearInterval(state.timerIv);
+  contentArea.innerHTML = `<div class="section-label">${t('offerSent')}</div><div class="active-order neutral"><div class="active-price">${price} ₸</div>${routeHtml(order.from, order.to)}
+    <div class="waiting" style="padding:14px"><div class="radar"><div class="radar-core"></div></div><div class="waiting-text">${t('offerWaiting')}</div></div></div>
+    <button class="btn btn-ghost" id="offer-cancel">${t('offerCancel')}</button>`;
+  const me = profileKey();
+  $('offer-cancel').addEventListener('click', () => { unsub('driverActiveUnsub'); remove(ref(db, `orders/${order.id}/offers/${me}`)).catch(() => {}); renderDriverOrders(); });
+  state.driverActiveUnsub = onValue(ref(db, 'orders/' + order.id), snap => {
+    const o = snap.val();
+    if (!o) { toast(t('paxCancelled'), true); finishDriverFlow(); return; }
+    if (o.status !== 'waiting') {
+      if (o.driverId === me) { unsub('driverActiveUnsub'); state.activeOrderId = order.id; renderDriverActiveOrder({ id: order.id, ...o }); }
+      else { toast(t('orderTaken'), true); finishDriverFlow(); }
+    }
+  });
+}
+
+function finishDriverFlow() {
+  unsub('driverActiveUnsub'); clearInterval(state.timerIv); state.activeOrderId = null; clearRoute(); renderDriverOrders();
+}
+
+function renderDriverActiveOrder(order) {
+  state.activeOrderId = order.id; unsub('driverOrdersListener'); unsub('driverActiveUnsub'); showBgMap(true);
+  paintDriverActive(order);
+  state.driverActiveUnsub = onValue(ref(db, 'orders/' + order.id), snap => {
+    const o = snap.val();
+    if (!o) { toast(t('paxCancelled'), true); finishDriverFlow(); return; }
+    if (o.driverId !== profileKey()) { finishDriverFlow(); return; }
+    if (o.status === 'done') return;
+    paintDriverActive({ id: order.id, ...o });
+  });
+}
+
+function paintDriverActive(o) {
+  const step = o.status === 'arrived' ? 3 : o.status === 'inprogress' ? 4 : 2; setStatus(step);
+  const title = o.status === 'arrived' ? t('drvArrived') : o.status === 'inprogress' ? t('drvInTrip') : t('driverAccepted');
+  let actions = '';
+  if (o.status === 'arrived') actions = `<div class="timer-chip" style="align-self:center">${t('waitElapsed')} <span id="arr-t">00:00</span></div><button class="btn btn-success" id="drv-start" style="margin-top:0">${t('btnStartTrip')}</button><button class="btn btn-ghost" id="drv-cancel" style="margin-top:0">${t('btnDriverCancel')}</button>`;
+  else if (o.status === 'inprogress') actions = `<button class="btn btn-nav" id="drv-nav-d" style="margin-top:0">${t('navToDestination')}</button><button class="btn btn-danger" id="drv-finish" style="margin-top:0">${t('btnFinish')}</button>`;
+  else actions = `<button class="btn btn-nav" id="drv-nav-p" style="margin-top:0">${t('navToPassenger')}</button><button class="btn" id="drv-arrived" style="margin-top:0">${t('btnArrived')}</button><button class="btn btn-ghost" id="drv-cancel" style="margin-top:0">${t('btnDriverCancel')}</button>`;
+  contentArea.innerHTML = `<div class="driver-card"><div class="avatar">${avatarHtml(o.photo)}</div>
+      <div class="meta"><div class="name">${escapeHtml(o.fullname || '')}</div><div class="car">${escapeHtml(o.location || '')}</div></div>
+      <button class="call-btn" id="drv-call">${PHONE_SVG}</button></div>
+    <div class="active-order"><div class="active-title">${title}</div><div class="active-price">${priceOf(o)} ₸</div>${routeHtml(o.from, o.to)}
+      <div class="addr-hint" style="margin:0 0 10px">${escapeHtml(payLabel(o.pay))}${o.comment ? ' · 💬 ' + escapeHtml(o.comment) : ''}</div>
+      <div id="nav-info"></div><div class="active-actions" style="display:flex;flex-direction:column;gap:10px;">${actions}</div></div>`;
+  const id = o.id, set_ = patch => update(ref(db, 'orders/' + id), patch);
+  $('drv-call').addEventListener('click', () => callPhone(o.phone));
+  const on = (i, f) => { const el = $(i); if (el) el.addEventListener('click', f); };
+  on('drv-nav-p', async () => { if (!state.lat) return toast(t('noLocation'), true); const c = o.lat ? { lat: o.lat, lng: o.lng } : await geocodeAddress(o.location || o.from); const i = c && await buildRoute(state.lat, state.lng, c.lat, c.lng); i ? showNavInfo(i) : toast(t('navNoRoute'), true); });
+  on('drv-nav-d', async () => { const c = o.toLat ? { lat: o.toLat, lng: o.toLng } : await geocodeAddress(o.to); const s = o.lat ? { lat: o.lat, lng: o.lng } : (state.lat ? { lat: state.lat, lng: state.lng } : null); const i = c && s && await buildRoute(s.lat, s.lng, c.lat, c.lng); i ? showNavInfo(i) : toast(t('navNoRoute'), true); });
+  on('drv-arrived', () => set_({ status: 'arrived', arrivedAt: Date.now() }));
+  on('drv-start', () => set_({ status: 'inprogress', startedAt: Date.now() }));
+  on('drv-finish', async () => {
+    await set_({ status: 'done', finishedAt: Date.now() });
+    setTimeout(() => remove(ref(db, 'orders/' + id)).catch(() => {}), 180000);
+    finishDriverFlow();
+  });
+  on('drv-cancel', async () => {
+    if (!confirm(t('driverCancelConfirm'))) return;
+    unsub('driverActiveUnsub');
+    await set_({ status: 'waiting', driverId: null, driverName: null, driverPhoto: null, driverPhone: null, driverCar: null, driverRating: null, acceptedAt: null, arrivedAt: null }).catch(() => {});
+    remove(ref(db, `orders/${id}/offers/${profileKey()}`)).catch(() => {});
+    finishDriverFlow();
+  });
+  if (o.status === 'arrived') startTimer('arr-t', o.arrivedAt || Date.now()); else clearInterval(state.timerIv);
 }
 function showNavInfo(i) {
   const el = $('nav-info'); if (!el) return;
@@ -1705,95 +2084,184 @@ const ICONS = {
 };
 function renderPassengerScreen() {
   if (state.activePassengerOrderId) return renderPassengerActiveOrder();
-  setStatus(1);
+  unsub('paxUnsub'); clearInterval(state.timerIv); setStatus(1);
   const chips = QUICK_PLACES[currentLang].map(p => `<button class="chip" data-q="${escapeHtml(p.q)}"><svg viewBox="0 0 24 24">${ICONS[p.icon]}</svg>${escapeHtml(p.label)}</button>`).join('');
   contentArea.innerHTML = `<div class="section-label">${t('readyTrip')}</div>
     <button class="btn" id="btn-create-order">${t('btnOrderTaxi')}</button>
     <button class="btn btn-ghost" id="btn-my-orders" style="margin-top:12px">${t('btnMyOrders')}</button>
     <div class="section-label" style="margin-top:18px">${t('quickPlaces')}</div>
     <div class="chips" id="quick-chips">${chips}</div>`;
-  $('btn-create-order').addEventListener('click', () => { if (!state.location) return toast(t('noLocation'), true); resetPriceModal(); modalPrice.classList.add('active'); setTimeout(() => $('price-input')?.focus(), 120); });
+  $('btn-create-order').addEventListener('click', () => { if (!state.location) return toast(t('noLocation'), true); openOrderModal(''); });
   $('btn-my-orders').addEventListener('click', renderPassengerOrdersList);
-  document.querySelectorAll('#quick-chips .chip').forEach(c => c.addEventListener('click', () => {
-    if (!state.location) return toast(t('noLocation'), true);
-    resetPriceModal(); modalPrice.classList.add('active');
-    const to = $('to-input'); if (to) to.value = c.dataset.q;
-  }));
+  document.querySelectorAll('#quick-chips .chip').forEach(c => c.addEventListener('click', () => { if (!state.location) return toast(t('noLocation'), true); openOrderModal(c.dataset.q); }));
 }
-function resetPriceModal() {
+
+function openOrderModal(prefillTo) {
   const m = $('price-modal-content');
-  const rec = 800 + Math.floor(Math.random() * 800);
+  let pay = 'cash', touched = false, dest = null, fromC = null, km = null, reqId = 0, estTimer = null;
   m.innerHTML = `<div class="modal-title">${t('priceTitle')}</div><div class="modal-sub">${t('priceSub')}</div>
-    <div class="field"><label class="field-label">${t('priceLabel')} <span style="color:var(--text-3);font-weight:600;letter-spacing:0;text-transform:none;font-size:.7rem;">· ${t('priceRecommended')}: ~${rec} ₸</span></label><input type="number" id="price-input" class="field-input" placeholder="${rec}" min="100" step="50" value="${rec}"></div>
-    <div class="field"><label class="field-label">${t('priceFrom')}</label><input type="text" id="from-input" class="field-input" placeholder="${escapeHtml(state.location || '')}" value="${escapeHtml(state.location || '')}"></div>
-    <div class="field"><label class="field-label">${t('priceTo')}</label><input type="text" id="to-input" class="field-input"></div>
-    <div style="display:flex;gap:10px;margin-top:18px;"><button class="btn btn-ghost" id="btn-price-cancel" style="margin-top:0">${t('btnCancel')}</button><button class="btn" id="btn-price-submit" style="margin-top:0">${t('btnCreateOrder')}</button></div>`;
-  $('btn-price-cancel').addEventListener('click', () => modalPrice.classList.remove('active'));
+    <div class="field"><label class="field-label">${t('priceFrom')}</label><input type="text" id="from-input" class="field-input" value="${escapeHtml(state.location || '')}"></div>
+    <div class="field"><label class="field-label">${t('priceTo')}</label><input type="text" id="to-input" class="field-input" value="${escapeHtml(prefillTo || '')}"><div class="addr-hint" id="est-line" style="margin:6px 0 0"></div></div>
+    <div class="field"><label class="field-label">${t('priceLabel')}</label>
+      <div class="stepper"><button type="button" class="step-btn" id="p-minus">−</button><input type="number" id="price-input" class="field-input" value="${TARIFF.def}" step="${TARIFF.step}" min="100" inputmode="numeric"><button type="button" class="step-btn" id="p-plus">+</button></div>
+      <div class="chips-row"><button type="button" class="chip" data-bump="100">+100 ₸</button><button type="button" class="chip" data-bump="200">+200 ₸</button><button type="button" class="chip" data-bump="300">+300 ₸</button></div></div>
+    <div class="field"><label class="field-label">${t('payLabel')}</label><div class="seg2" id="pay-seg"><button type="button" data-pay="cash" class="active">${t('payCash')}</button><button type="button" data-pay="transfer">${t('payTransfer')}</button></div></div>
+    <div class="field"><label class="field-label">${t('commentLabel')}</label><input type="text" id="comment-input" class="field-input" maxlength="120" placeholder="${escapeHtml(t('commentPh'))}"></div>
+    <div class="legal-note">${t('orderLegal')}</div>
+    <div style="display:flex;gap:10px;margin-top:16px;"><button class="btn btn-ghost" id="btn-price-cancel" style="margin-top:0">${t('btnCancel')}</button><button class="btn" id="btn-price-submit" style="margin-top:0">${t('btnCreateOrder')}</button></div>`;
+  const priceEl = $('price-input'), getPrice = () => Math.min(TARIFF.max, Math.max(0, parseInt(priceEl.value, 10) || 0));
+  $('p-minus').addEventListener('click', () => { touched = true; priceEl.value = Math.max(100, getPrice() - TARIFF.step); });
+  $('p-plus').addEventListener('click', () => { touched = true; priceEl.value = Math.min(TARIFF.max, getPrice() + TARIFF.step); });
+  priceEl.addEventListener('input', () => { touched = true; });
+  m.querySelectorAll('[data-bump]').forEach(b => b.addEventListener('click', () => { touched = true; priceEl.value = Math.min(TARIFF.max, getPrice() + (+b.dataset.bump)); }));
+  m.querySelectorAll('#pay-seg button').forEach(b => b.addEventListener('click', () => { pay = b.dataset.pay; m.querySelectorAll('#pay-seg button').forEach(x => x.classList.toggle('active', x === b)); }));
+  async function updateEstimate() {
+    const to = $('to-input')?.value.trim(), from = $('from-input')?.value.trim(), hint = $('est-line'); if (!hint) return;
+    const my = ++reqId;
+    if (!to || to.length < 3) { dest = null; km = null; hint.textContent = ''; return; }
+    hint.textContent = t('locateAddress');
+    const f = (!from || from === state.location) ? (state.lat ? { lat: state.lat, lng: state.lng } : null) : await geocodeAddress(from);
+    const d = await geocodeAddress(to);
+    if (my !== reqId || !$('est-line')) return;
+    fromC = f; dest = d;
+    if (!f || !d) { km = null; hint.textContent = d ? '' : t('estFail'); return; }
+    km = +(haversine(f.lat, f.lng, d.lat, d.lng) * 1.3).toFixed(1);
+    const est = estimatePrice(km);
+    hint.textContent = `${t('estLine')}: ≈ ${km} ${t('km')} · ~${est} ₸`;
+    if (!touched) priceEl.value = est;
+  }
+  const schedule = () => { clearTimeout(estTimer); estTimer = setTimeout(updateEstimate, 700); };
+  $('to-input').addEventListener('input', schedule); $('from-input').addEventListener('input', () => { fromC = null; if ($('to-input').value.trim()) schedule(); });
+  modalPrice.classList.add('active');
+  if (prefillTo) updateEstimate(); else setTimeout(() => $('to-input')?.focus(), 150);
+  $('btn-price-cancel').addEventListener('click', () => { clearTimeout(estTimer); reqId++; modalPrice.classList.remove('active'); });
   $('btn-price-submit').addEventListener('click', async () => {
-    const price = parseInt($('price-input').value, 10), from = $('from-input').value.trim() || state.location, to = $('to-input').value.trim();
-    if (!price || price < 100) return errShake($('price-input')); if (!from) return errShake($('from-input')); if (!to) return errShake($('to-input'));
-    state.activePassengerOrderId = await publishOrder({ from, to, price, location: state.location, lat: state.lat, lng: state.lng });
-    modalPrice.classList.remove('active'); renderPassengerActiveOrder();
+    const price = getPrice(), from = $('from-input').value.trim() || state.location, to = $('to-input').value.trim();
+    if (price < 100) return errShake(priceEl); if (!from) return errShake($('from-input')); if (!to) return errShake($('to-input'));
+    const btn = $('btn-price-submit'); btn.disabled = true; clearTimeout(estTimer);
+    if (!fromC && from !== state.location) fromC = await geocodeAddress(from);
+    const lat = fromC ? fromC.lat : state.lat, lng = fromC ? fromC.lng : state.lng;
+    try {
+      state.activePassengerOrderId = await publishOrder({ from, to, price, location: state.location || from, lat: lat ?? null, lng: lng ?? null, toLat: dest ? dest.lat : null, toLng: dest ? dest.lng : null, tripKm: km ?? null, pay, comment: $('comment-input').value.trim().slice(0, 120) });
+    } catch (e) { btn.disabled = false; return toast(t('navNoRoute'), true); }
+    reqId++; modalPrice.classList.remove('active'); renderPassengerActiveOrder();
   });
 }
+
+async function acceptOffer(id, v) {
+  const res = await runTransaction(ref(db, 'orders/' + id), cur => {
+    if (cur === null) return null;
+    if (cur.status !== 'waiting') return;
+    return { ...cur, status: 'accepted', price: Number(v.price), driverId: v.k, driverName: v.driverName || '', driverPhoto: v.driverPhoto || '', driverPhone: v.driverPhone || '', driverCar: v.driverCar || null, driverRating: v.driverRating || null, acceptedAt: Date.now(), offers: null };
+  }).catch(() => null);
+  if (!res || !res.committed) toast(t('orderTaken'), true);
+}
+
 function renderPassengerActiveOrder() {
   if (!state.activePassengerOrderId) return renderPassengerScreen();
-  setStatus(1);
+  unsub('paxUnsub'); clearInterval(state.timerIv);
+  const id = state.activePassengerOrderId;
   contentArea.innerHTML = `<div class="section-label">${t('yourOrder')}</div><div id="pax-view"><div class="loading"><div class="spinner"></div>${t('loading')}</div></div>`;
-  const orderRef = ref(db, 'orders/' + state.activePassengerOrderId);
-  const listener = onValue(orderRef, snap => {
-    const o = snap.val(), view = $('pax-view'); if (!view) return;
-    if (!o) { state.activePassengerOrderId = null; off(orderRef, 'value', listener); return renderPassengerScreen(); }
-    const route = `<div class="active-route"><div class="route-line"><span class="dot dot-start"></span><span>${escapeHtml(o.from)}</span></div><div class="route-line"><span class="dot dot-end"></span><span>${escapeHtml(o.to)}</span></div></div>`;
-    if (o.status === 'waiting') {
-      setStatus(1);
-      view.innerHTML = `<div class="active-order neutral"><div class="active-title">${t('searchDriver')}</div><div class="active-price">${o.price} ₸</div>${route}<div class="waiting" style="padding:16px"><div class="radar"><div class="radar-core"></div></div><div class="waiting-text">${t('waitingDriver')}</div></div></div>
-        <div style="display:flex;gap:10px;margin-top:12px;"><button class="btn btn-danger" id="pax-cancel" style="margin-top:0;flex:1">${t('btnCancelOrder')}</button><button class="btn btn-ghost" id="pax-share" style="margin-top:0;flex:1">${t('shareRoute')}</button></div>`;
-      $('pax-cancel').addEventListener('click', () => openCancelModal(orderRef, listener));
-      $('pax-share').addEventListener('click', () => shareRoute(o));
-    } else if (o.status === 'accepted') {
-      setStatus(2);
-      const ph = o.driverPhoto ? `<img src="${o.driverPhoto}" alt="">` : `<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>`;
-      view.innerHTML = `<div class="driver-card">
-          <div class="avatar">${ph}</div>
-          <div class="meta"><div class="name">${escapeHtml(o.driverName || '')} <span class="verified-badge"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>${t('driverVerified')}</span></div><div class="car">${t('driverName')}</div></div>
-          <button class="call-btn" id="pax-call"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/></svg></button>
-        </div>
-        <div class="active-order"><div class="active-title">${t('driverOnWay')}</div><div class="active-price">${o.price} ₸</div>${route}<div class="waiting-text" style="text-align:center">${t('driverAcceptedOrder')}</div></div>
-        <div style="display:flex;gap:10px;margin-top:12px;"><button class="btn btn-ghost" id="pax-share2" style="margin-top:0">${t('shareRoute')}</button></div>`;
-      $('pax-call').addEventListener('click', () => { const phone = o.driverPhone || ''; if (phone) location.href = 'tel:' + phone.replace(/\D/g, ''); else toast(t('phoneUnavailable'), true); });
-      $('pax-share2').addEventListener('click', () => shareRoute(o));
+  let prev = null;
+  state.paxUnsub = onValue(ref(db, 'orders/' + id), snap => {
+    const o = snap.val();
+    if (!o || !o.status) { unsub('paxUnsub'); clearInterval(state.timerIv); state.activePassengerOrderId = null; toast(t('orderCancelled'), true); renderPassengerScreen(); return; }
+    if (o.status === 'done') {
+      unsub('paxUnsub'); clearInterval(state.timerIv); state.activePassengerOrderId = null;
+      remove(ref(db, 'orders/' + id)).catch(() => {});
+      renderPassengerScreen(); openRateModal({ driverId: o.driverId, driverName: o.driverName }); return;
     }
+    if (o.status === 'arrived' && prev && prev !== 'arrived') { alertUser(); toast(t('arrivedToast')); }
+    if (o.status === 'waiting' && (prev === 'accepted' || prev === 'arrived')) toast(t('drvCancelledToast'), true);
+    prev = o.status; paintPassenger(o, id);
   });
 }
+
+function paintPassenger(o, id) {
+  const view = $('pax-view'); if (!view) return;
+  const price = priceOf(o), route = routeHtml(o.from, o.to);
+  const meta = `<div class="addr-hint" style="margin:6px 0 0">${escapeHtml(payLabel(o.pay))}${o.comment ? ' · 💬 ' + escapeHtml(o.comment) : ''}</div>`;
+  if (o.status === 'waiting') {
+    setStatus(1);
+    const offers = Object.entries(o.offers || {}).map(([k, v]) => ({ k, ...v })).filter(v => Number(v.price) > 0).sort((a, b) => a.price - b.price);
+    const offersHtml = offers.length
+      ? `<div class="section-label" style="margin-top:14px">${t('offersTitle')}</div>` + offers.map(v => `<div class="offer"><div class="offer-av">${avatarHtml(v.driverPhoto)}</div>
+          <div class="offer-info"><div class="offer-name">${escapeHtml(v.driverName || '')}</div><div class="offer-sub">${ratingText(v.driverRating)}${v.eta ? ' · ' + Number(v.eta) + ' ' + t('min') : ''}</div><div class="offer-sub">${escapeHtml(carText(v.driverCar))}${v.driverCar && v.driverCar.plate ? ' · ' + escapeHtml(v.driverCar.plate) : ''}</div></div>
+          <div class="offer-r"><div class="order-price">${Number(v.price)} ₸</div><button class="btn btn-success offer-btn" data-k="${escapeHtml(v.k)}">${t('offerAccept')}</button></div></div>`).join('')
+      : `<div class="waiting" style="padding:16px"><div class="radar"><div class="radar-core"></div></div><div class="waiting-text">${t('waitingDriver')}</div></div>`;
+    view.innerHTML = `<div class="active-order neutral"><div class="active-title">${t('searchDriver')}</div>
+        <div class="active-price">${price} ₸ <span class="timer-chip" style="vertical-align:middle;margin-left:8px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="wait-t">00:00</span></span></div>${route}${meta}
+        <button class="btn btn-ghost" id="pax-raise" style="margin-top:12px">${t('raisePrice')} +100 ₸</button></div>${offersHtml}
+      <div style="display:flex;gap:10px;margin-top:12px;"><button class="btn btn-danger" id="pax-cancel" style="margin-top:0;flex:1">${t('btnCancelOrder')}</button><button class="btn btn-ghost" id="pax-share" style="margin-top:0;flex:1">${t('shareRoute')}</button></div>`;
+    $('pax-raise').addEventListener('click', () => update(ref(db, 'orders/' + id), { price: Math.min(TARIFF.max, price + 100) }).catch(() => {}));
+    view.querySelectorAll('.offer-btn').forEach(b => b.addEventListener('click', () => { const v = offers.find(x => x.k === b.dataset.k); if (v) { b.disabled = true; acceptOffer(id, v); } }));
+    $('pax-cancel').addEventListener('click', () => openCancelModal(id));
+    $('pax-share').addEventListener('click', () => shareRoute(o));
+    startTimer('wait-t', o.createdAt || Date.now());
+    return;
+  }
+  const arrived = o.status === 'arrived', inTrip = o.status === 'inprogress';
+  setStatus(inTrip ? 4 : arrived ? 3 : 2);
+  const title = inTrip ? t('pxInTrip') : arrived ? t('pxArrived') : t('pxAccepted');
+  const car = o.driverCar || null;
+  view.innerHTML = `<div class="driver-card"><div class="avatar">${avatarHtml(o.driverPhoto)}</div>
+      <div class="meta"><div class="name">${escapeHtml(o.driverName || '')} <span class="verified-badge"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>${t('driverVerified')}</span></div><div class="car">${ratingText(o.driverRating)}${car ? ' · ' + escapeHtml(carText(car)) : ''}</div></div>
+      <button class="call-btn" id="pax-call">${PHONE_SVG}</button></div>
+    ${!inTrip && car && car.plate ? `<div class="safe-note">${t('checkPlate')}</div><div class="plate-big">${escapeHtml(car.plate)}</div>` : ''}
+    <div class="active-order"><div class="active-title">${title}</div><div class="active-price">${price} ₸${arrived ? ` <span class="timer-chip" style="vertical-align:middle;margin-left:8px"><span id="arr-t">00:00</span></span>` : ''}</div>${route}${meta}</div>
+    <div style="display:flex;gap:10px;margin-top:12px;"><button class="btn btn-ghost" id="pax-share" style="margin-top:0;flex:1">${t('shareRoute')}</button><button class="btn btn-sos-mini" id="pax-sos" style="margin-top:0;flex:1">${t('sosShort')}</button></div>
+    ${inTrip ? '' : `<button class="btn btn-ghost" id="pax-cancel" style="margin-top:10px">${t('btnCancelOrder')}</button>`}`;
+  $('pax-call').addEventListener('click', () => callPhone(o.driverPhone));
+  $('pax-share').addEventListener('click', () => shareRoute(o));
+  $('pax-sos').addEventListener('click', () => modalSos.classList.add('active'));
+  if ($('pax-cancel')) $('pax-cancel').addEventListener('click', () => openCancelModal(id));
+  if (arrived) startTimer('arr-t', o.arrivedAt || Date.now()); else clearInterval(state.timerIv);
+}
+
 function shareRoute(o) {
-  const text = `${t('shareText')}: ${o.from} → ${o.to} (${o.price}₸). КЕТТІКGO`;
+  const text = `${t('shareText')}: ${o.from} → ${o.to} (${priceOf(o)}₸). КЕТТІКGO`;
   if (navigator.share) navigator.share({ title: 'КЕТТІКGO', text }).catch(() => {});
   else { navigator.clipboard?.writeText(text); toast('OK'); }
 }
-function openCancelModal(orderRef, listener) {
+
+function openCancelModal(orderId) {
   const m = $('cancel-modal-content');
   const opts = [t('cancel1'), t('cancel2'), t('cancel3'), t('cancel4')];
   m.innerHTML = `<div class="modal-title">${t('cancelTitle')}</div><div class="modal-sub">${t('cancelSub')}</div>
-    <div style="display:flex;flex-direction:column;gap:8px;">${opts.map((o, i) => `<button class="btn btn-ghost" data-c="${i}" style="margin-top:0;text-align:left;justify-content:flex-start;">${escapeHtml(o)}</button>`).join('')}</div>`;
+    <div style="display:flex;flex-direction:column;gap:8px;">${opts.map((o, i) => `<button class="btn btn-ghost" data-c="${i}" style="margin-top:0;text-align:left;">${escapeHtml(o)}</button>`).join('')}</div>`;
   modalCancel.classList.add('active');
   m.querySelectorAll('button[data-c]').forEach(b => b.addEventListener('click', async () => {
-    await remove(orderRef); off(orderRef, 'value', listener); state.activePassengerOrderId = null;
-    modalCancel.classList.remove('active'); renderPassengerScreen();
+    unsub('paxUnsub'); clearInterval(state.timerIv); state.activePassengerOrderId = null;
+    modalCancel.classList.remove('active');
+    await remove(ref(db, 'orders/' + orderId)).catch(() => {});
+    toast(t('orderCancelled')); renderPassengerScreen();
   }));
 }
+
+function openRateModal(trip) {
+  const m = $('rate-modal-content'); let stars = 0;
+  m.innerHTML = `<div class="modal-title">${t('rateTitle')}</div><div class="modal-sub">${escapeHtml(trip.driverName || '')} · ${t('rateSub')}</div>
+    <div class="stars" id="rate-stars">${[1, 2, 3, 4, 5].map(n => `<button class="star" data-n="${n}">${STAR_SVG}</button>`).join('')}</div>
+    <div style="display:flex;gap:10px;margin-top:8px;"><button class="btn btn-ghost" id="rate-skip" style="margin-top:0">${t('rateSkip')}</button><button class="btn" id="rate-send" style="margin-top:0" disabled>${t('rateSend')}</button></div>`;
+  modalRate.classList.add('active');
+  m.querySelectorAll('.star').forEach(s => s.addEventListener('click', () => { stars = +s.dataset.n; m.querySelectorAll('.star').forEach(x => x.classList.toggle('on', +x.dataset.n <= stars)); $('rate-send').disabled = false; }));
+  $('rate-skip').addEventListener('click', () => modalRate.classList.remove('active'));
+  $('rate-send').addEventListener('click', async () => { if (stars && trip.driverId) await addRating(trip.driverId, stars); modalRate.classList.remove('active'); toast(t('rateDone')); });
+}
+
 function renderPassengerOrdersList() {
   contentArea.innerHTML = `<div class="section-label">${t('myOrders')}</div><div id="pax-list"><div class="loading"><div class="spinner"></div>${t('loading')}</div></div><button class="btn btn-ghost" id="pax-back" style="margin-top:14px">${t('btnBack')}</button>`;
   $('pax-back').addEventListener('click', renderPassengerScreen);
-  onValue(ref(db, 'orders'), snap => {
+  const statusName = s => s === 'waiting' ? t('statusWaiting') : s === 'arrived' ? t('statusArrived') : s === 'inprogress' ? t('statusTrip') : t('statusAccepted');
+  get(ref(db, 'orders')).then(snap => {
     const data = snap.val(), list = $('pax-list'); if (!list) return;
-    const mine = data ? Object.entries(data).map(([id, o]) => ({ id, ...o })).filter(o => o.phone === state.phone) : [];
+    const mine = data ? Object.entries(data).map(([id, o]) => ({ id, ...o })).filter(o => o.phone === state.phone && o.status) : [];
     if (!mine.length) { list.innerHTML = `<div class="empty">${t('noOrders')}</div>`; return; }
     list.innerHTML = '<div class="orders"></div>'; const box = list.querySelector('.orders');
-    mine.forEach((o, i) => { const el = document.createElement('div'); el.className = 'order'; el.style.animationDelay = (i * 70) + 'ms';
-      el.innerHTML = `<div class="order-route"><div class="route-line"><span class="dot dot-start"></span><span>${escapeHtml(o.from)}</span></div><div class="route-line"><span class="dot dot-end"></span><span>${escapeHtml(o.to)}</span></div><div class="order-meta"><span>${o.status === 'waiting' ? t('statusWaiting') : t('statusAccepted')}</span></div></div><div class="order-price">${o.price} ₸</div>`;
+    mine.forEach((o, i) => { const el = document.createElement('div'); el.className = 'order'; el.style.animationDelay = Math.min(i, 6) * 60 + 'ms';
+      el.innerHTML = `<div class="order-route"><div class="route-line"><span class="dot dot-start"></span><span>${escapeHtml(o.from)}</span></div><div class="route-line"><span class="dot dot-end"></span><span>${escapeHtml(o.to)}</span></div><div class="order-meta"><span>${escapeHtml(statusName(o.status))}</span></div></div><div class="order-price">${priceOf(o)} ₸</div>`;
       el.addEventListener('click', () => { state.activePassengerOrderId = o.id; renderPassengerActiveOrder(); }); box.appendChild(el); });
-  }, { onlyOnce: true });
+  }).catch(() => { const l = $('pax-list'); if (l) l.innerHTML = `<div class="empty">${t('noOrders')}</div>`; });
 }
 
 // ============================================================
@@ -1810,22 +2278,30 @@ function renderCurrentRole() {
 // ============================================================
 // РЕГИСТРАЦИЯ
 // ============================================================
-btnReg.addEventListener('click', () => {
+btnReg.addEventListener('click', async () => {
+  if (state.busy) return;
   const fullname = fullnameInput.value.trim(), phone = phoneInput.value.trim();
   if (!fullname) { fullnameInput.focus(); return errShake(fullnameInput); }
   if (phone.replace(/\D/g, '').length < 11) { phoneInput.focus(); return errShake(phoneInput); }
   if (!state.photo) { openPhotoModal(); return; }
   if (!state.rulesRead) { toast(t('needRulesRead'), true); $('chk-rules-wrap').classList.add('pulse'); setTimeout(() => $('chk-rules-wrap').classList.remove('pulse'), 600); openRules('accept'); return; }
-  const all = ['chk-rules', 'chk-pd', 'chk-age'].map(id => $(id));
+  const all = ['chk-rules', 'chk-info', 'chk-pd', 'chk-age'].map(id => $(id));
   if (!all.every(c => c.checked)) { toast(t('needConsent'), true); all.forEach(c => { if (!c.checked) { const w = c.closest('.check'); w.classList.add('pulse'); setTimeout(() => w.classList.remove('pulse'), 600); } }); return; }
+  state.busy = true;
   state.fullname = fullname; state.phone = phone; state.consentAt = Date.now();
   if (!state.mail) state.mail = phone.replace(/\D/g, '') + '@kettikgo.kz';
-  displayName.textContent = fullname; saveProfileToFirebase(); showScreen('role');
+  displayName.textContent = fullname; saveProfileToFirebase();
+  await runSplash(1700, () => showScreen('role'));
+  state.busy = false;
 });
 toggleMode.addEventListener('click', () => { state.isLogin = !state.isLogin; btnReg.textContent = state.isLogin ? t('btnLogin') : t('btnContinue'); toggleMode.textContent = state.isLogin ? t('toggleRegister') : t('toggleLogin'); });
 fullnameInput.addEventListener('keydown', e => { if (e.key === 'Enter') phoneInput.focus(); });
 
-document.querySelectorAll('.role-card').forEach(card => card.addEventListener('click', () => {
+document.querySelectorAll('.role-card').forEach(card => card.addEventListener('click', async () => {
+  const grid = card.parentElement; if (grid.classList.contains('has-pick')) return;
+  grid.classList.add('has-pick'); card.classList.add('picked');
+  await sleep(reduceMotion ? 60 : 520);
+  grid.classList.remove('has-pick'); card.classList.remove('picked');
   if (card.dataset.role === 'driver') {
     state.driverFormStep = 1; Object.assign(state.driverData, { fullname: state.fullname, phone: state.phone, email: '' });
     $('form-fullname').value = state.fullname; $('form-phone').value = state.phone; $('form-email').value = state.mail.endsWith('@kettikgo.kz') ? '' : state.mail;
@@ -1852,7 +2328,7 @@ document.querySelectorAll('.settings-item').forEach(item => item.addEventListene
 async function deleteMyData() {
   if (!confirm(t('deleteConfirm'))) return;
   const k = profileKey();
-  try { await Promise.all([remove(ref(db, 'profiles/' + k)), remove(ref(db, 'driver_profiles/' + k)), remove(ref(db, 'drivers/' + k))]); if (state.activePassengerOrderId) await remove(ref(db, 'orders/' + state.activePassengerOrderId)); } catch (e) {}
+  try { await Promise.all([remove(ref(db, 'profiles/' + k)), remove(ref(db, 'driver_profiles/' + k)), remove(ref(db, 'drivers/' + k)), remove(ref(db, 'ratings/' + k))]); if (state.activePassengerOrderId) await remove(ref(db, 'orders/' + state.activePassengerOrderId)); } catch (e) {}
   toast(t('deleted')); logout();
 }
 function openEdit(field) {
@@ -1877,9 +2353,9 @@ modalCancel.addEventListener('click', e => { if (e.target === modalCancel) modal
 
 function logout() {
   goOffline();
-  if (state.driverOrdersListener) off(ref(db, 'orders'), 'value', state.driverOrdersListener);
-  Object.assign(state, { driverOrdersListener: null, ordersListener: null, activeOrderId: null, activePassengerOrderId: null, fullname: '', phone: '', mail: '', photo: '', role: null, hasCar: null, location: '', lat: null, lng: null, ordersMapActive: false, allOrders: [], driverData: emptyDriver(), driverFormStep: 1, isLogin: false, rulesRead: false, consentAt: null });
-  fullnameInput.value = phoneInput.value = manualAddressInput.value = ''; ['chk-rules','chk-pd','chk-age','chk-drv','chk-drv-pd'].forEach(id => $(id).checked = false);
+  ['driverOrdersListener', 'driverActiveUnsub', 'paxUnsub'].forEach(unsub); clearInterval(state.timerIv);
+  Object.assign(state, { driverOrdersListener: null, driverActiveUnsub: null, paxUnsub: null, seenOrders: null, busy: false, ordersListener: null, activeOrderId: null, activePassengerOrderId: null, fullname: '', phone: '', mail: '', photo: '', role: null, hasCar: null, location: '', lat: null, lng: null, ordersMapActive: false, allOrders: [], driverData: emptyDriver(), driverFormStep: 1, isLogin: false, rulesRead: false, consentAt: null });
+  fullnameInput.value = phoneInput.value = manualAddressInput.value = ''; ['chk-rules','chk-info','chk-pd','chk-age','chk-drv','chk-drv-pd'].forEach(id => $(id).checked = false);
   displayLoc.textContent = t('locDetecting');
   document.querySelectorAll('.photo-upload.has-photo').forEach(el => { el.classList.remove('has-photo'); el.innerHTML = photoPlaceholders.get(el.dataset.photo) || ''; });
   btnReg.textContent = t('btnContinue'); toggleMode.textContent = t('toggleLogin');
@@ -1894,6 +2370,7 @@ $('btn-logout').addEventListener('click', logout);
 // ============================================================
 renderRules(); showScreen('reg');
 addEventListener('beforeunload', goOffline);
+document.addEventListener('visibilitychange', () => document.documentElement.classList.toggle('paused', document.hidden));
 </script>
 </body>
 </html>
